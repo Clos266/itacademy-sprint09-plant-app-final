@@ -103,11 +103,9 @@ export default function PlantsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm">
-                        Editar
-                      </Button>
-                      <Button variant="destructive" size="sm">
-                        Borrar
+                      <Button>
+                        <span className="hidden md:inline">Editar</span>
+                        <span className="md:hidden text-lg">✏️</span>
                       </Button>
                     </div>
                   </TableCell>

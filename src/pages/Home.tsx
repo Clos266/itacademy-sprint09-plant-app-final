@@ -1,6 +1,5 @@
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   return (
@@ -12,7 +11,7 @@ export default function HomePage() {
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardContent className="pt-6">
-            <h3 className="font-semibold mb-2">🌿 Ultimas plantas añadidas</h3>
+            <h3 className="font-semibold mb-2">Proximos eventos</h3>
             <p className="text-sm text-muted-foreground">
               Añade, organiza y revisa tus plantas fácilmente.
             </p>
