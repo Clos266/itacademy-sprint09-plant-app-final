@@ -6,7 +6,6 @@ import {
   HomeIcon,
   LeafIcon,
 } from "lucide-react";
-import { homedir } from "os";
 
 type MenuItemType = {
   title: string;

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,8 +25,34 @@ import {
   PaginationPrevious,
   PaginationNext,
 } from "@/components/ui/pagination";
+import { mockPlants } from "@/data/mockPlants";
 
 export default function PlantsPage() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("todas");
+
+  const itemsPerPage = 5;
+
+  // 🔹 Filtro por nombre y disponibilidad
+  const filtered = mockPlants.filter(
+    (p) =>
+      p.nombre_comun.toLowerCase().includes(search.toLowerCase()) &&
+      (filter === "todas" ||
+        (filter === "disponible" && p.disponible) ||
+        (filter === "no-disponible" && !p.disponible))
+  );
+
+  // 🔹 Paginación real
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginated = filtered.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
+  const handlePrevious = () => setPage((p) => Math.max(1, p - 1));
+  const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
+
   return (
     <>
       <PageHeader>
@@ -51,7 +78,6 @@ export default function PlantsPage() {
                 <SelectItem value="interior">Interior</SelectItem>
               </SelectContent>
             </Select>
-
             <Select>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Disponibilidad" />
@@ -62,7 +88,6 @@ export default function PlantsPage() {
                 <SelectItem value="no-disponible">No disponible</SelectItem>
               </SelectContent>
             </Select>
-
             <Button>
               <span className="hidden md:inline">➕ Añadir planta</span>
               <span className="md:hidden text-lg font-bold">＋</span>
@@ -81,30 +106,30 @@ export default function PlantsPage() {
                 <TableHead>Nombre común</TableHead>
                 <TableHead>Nombre científico</TableHead>
                 <TableHead>Riego (días)</TableHead>
-                <TableHead>Disponible</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead>Editar</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[1, 2, 3].map((n) => (
-                <TableRow key={n}>
+              {paginated.map((plant) => (
+                <TableRow key={plant.id}>
                   <TableCell>
-                    <div className="w-12 h-12 bg-muted rounded-lg" />
+                    <img
+                      src={plant.image_url || "/placeholder.jpg"}
+                      alt={plant.nombre_comun}
+                      className="w-12 h-12 rounded-lg object-cover shadow-sm"
+                    />
                   </TableCell>
-                  <TableCell>Planta {n}</TableCell>
-                  <TableCell>
-                    <span className="italic text-muted-foreground">
-                      Ficus lyrata
-                    </span>
+                  <TableCell className="font-medium">
+                    {plant.nombre_comun}
                   </TableCell>
-                  <TableCell>7</TableCell>
-                  <TableCell>
-                    <span className="text-green-600 font-medium">Sí</span>
+                  <TableCell className="italic text-muted-foreground">
+                    {plant.nombre_cientifico || "—"}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                  <TableCell>{plant.interval_days}</TableCell>
+                  <TableCell className="w-24">
+                    <div className="flex  gap-2">
                       <Button>
-                        <span className="hidden md:inline">Editar</span>
+                        <span className="hidden md:inline">✏️</span>
                         <span className="md:hidden text-lg">✏️</span>
                       </Button>
                     </div>
@@ -113,6 +138,13 @@ export default function PlantsPage() {
               ))}
             </TableBody>
           </Table>
+
+          {/* 🪴 Sin resultados */}
+          {paginated.length === 0 && (
+            <div className="text-center py-6 text-muted-foreground">
+              No se encontraron plantas.
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -121,18 +153,30 @@ export default function PlantsPage() {
         <Pagination>
           <PaginationContent>
             <PaginationItem>
-              <PaginationPrevious href="#" />
+              <PaginationPrevious
+                href="#"
+                onClick={handlePrevious}
+                aria-disabled={page === 1}
+              />
             </PaginationItem>
+
+            {[...Array(totalPages)].map((_, i) => (
+              <PaginationItem key={i}>
+                <Button
+                  variant={page === i + 1 ? "default" : "ghost"}
+                  onClick={() => setPage(i + 1)}
+                >
+                  {i + 1}
+                </Button>
+              </PaginationItem>
+            ))}
+
             <PaginationItem>
-              <Button variant="ghost" className="font-medium">
-                1
-              </Button>
-            </PaginationItem>
-            <PaginationItem>
-              <Button variant="ghost">2</Button>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext href="#" />
+              <PaginationNext
+                href="#"
+                onClick={handleNext}
+                aria-disabled={page === totalPages}
+              />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
