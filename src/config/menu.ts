@@ -5,6 +5,7 @@ import {
   LucideIcon,
   HomeIcon,
   LeafIcon,
+  ArrowLeftRight,
 } from "lucide-react";
 
 type MenuItemType = {
@@ -22,14 +23,20 @@ export const mainMenu: MenuType = [
     url: "/",
     icon: HomeIcon,
   },
+
   {
     title: "Dashboard",
-    url: "/",
+    url: "/dashboard",
     icon: Gauge,
   },
   {
+    title: "Swaps",
+    url: "/swaps",
+    icon: ArrowLeftRight,
+  },
+  {
     title: "Plants",
-    url: "/pages/feature",
+    url: "/plants",
     icon: LeafIcon,
   },
 

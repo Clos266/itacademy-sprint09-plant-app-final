@@ -63,10 +63,10 @@ export default function PlantsPage() {
       <Card className="mt-4">
         <CardContent className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4">
           <div className="flex gap-2 w-full md:w-1/2">
-            <Input placeholder="Buscar planta..." className="flex-1" />
+            <Input placeholder="Buscar planta..." />
             <Button>Buscar</Button>
           </div>
-          <div className="flex gap-2 w-full md:w-auto">
+          <div className="flex gap-2  md:w-auto">
             <Select>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Categoría" />
@@ -78,6 +78,7 @@ export default function PlantsPage() {
                 <SelectItem value="interior">Interior</SelectItem>
               </SelectContent>
             </Select>
+
             <Select>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Disponibilidad" />

@@ -5,7 +5,7 @@ export default function HomePage() {
   return (
     <div className="space-y-6">
       <PageHeader>
-        <PageHeaderHeading>🌱 Bienvenido a PlantApp</PageHeaderHeading>
+        <PageHeaderHeading>Bienvenido a PlantApp</PageHeaderHeading>
       </PageHeader>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
