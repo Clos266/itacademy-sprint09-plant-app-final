@@ -16,7 +16,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { ArrowUpDown, Check, X } from "lucide-react";
+import { ArrowUpDown, Check, X, EyeIcon } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
 import { mockPlants } from "@/data/mockPlants";
 import { mockUsers } from "@/data/mockUsers";
@@ -287,16 +287,16 @@ export default function SwapsPage() {
                       <div className="flex justify-end gap-2">
                         {swap.status === "pendiente" ? (
                           <>
-                            <Button variant="outline" size="sm">
-                              <Check className="w-4 h-4 mr-1" /> Aceptar
+                            <Button size="sm">
+                              <Check />
                             </Button>
                             <Button variant="destructive" size="sm">
-                              <X className="w-4 h-4 mr-1" /> Rechazar
+                              <X />
                             </Button>
                           </>
                         ) : (
                           <Button variant="ghost" size="sm">
-                            Ver
+                            <EyeIcon />
                           </Button>
                         )}
                       </div>
