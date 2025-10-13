@@ -46,8 +46,13 @@ export const mainMenu: MenuType = [
     icon: Files,
     items: [
       {
-        title: "Sample Page",
-        url: "/pages/sample",
+        title: "Login",
+        url: "/pages/login",
+        icon: Files,
+      },
+      {
+        title: "Signup",
+        url: "/pages/signup",
         icon: Files,
       },
     ],
