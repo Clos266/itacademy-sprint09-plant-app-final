@@ -31,19 +31,22 @@ export default function PlantsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("todas");
+  const [category, setCategory] = useState("todas");
 
   const itemsPerPage = 5;
 
-  // 🔹 Filtro por nombre y disponibilidad
+  // 🔹 Filtro por nombre, categoría y disponibilidad
   const filtered = mockPlants.filter(
     (p) =>
       p.nombre_comun.toLowerCase().includes(search.toLowerCase()) &&
       (filter === "todas" ||
         (filter === "disponible" && p.disponible) ||
-        (filter === "no-disponible" && !p.disponible))
+        (filter === "no-disponible" && !p.disponible)) &&
+      (category === "todas" ||
+        p.especie?.toLowerCase().includes(category.toLowerCase()))
   );
 
-  // 🔹 Paginación real
+  // 🔹 Paginación
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginated = filtered.slice(
     (page - 1) * itemsPerPage,
@@ -56,60 +59,66 @@ export default function PlantsPage() {
   return (
     <>
       <PageHeader>
-        <PageHeaderHeading>🌿 Mis Plantas</PageHeaderHeading>
+        <PageHeaderHeading>🌿 My Plants</PageHeaderHeading>
       </PageHeader>
 
-      {/* 🔍 Barra de búsqueda y filtros */}
+      {/* 🔍 Search & Filters */}
       <Card className="mt-4">
         <CardContent className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4">
           <div className="flex gap-2 w-full md:w-1/2">
-            <Input placeholder="Buscar planta..." />
-            <Button>Buscar</Button>
+            <Input
+              placeholder="Search plant..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <Button>Search</Button>
           </div>
-          <div className="flex gap-2  md:w-auto">
-            <Select>
+
+          <div className="flex gap-2 md:w-auto">
+            <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Categoría" />
+                <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="suculentas">Suculentas</SelectItem>
+                <SelectItem value="todas">All</SelectItem>
+                <SelectItem value="suculentas">Succulents</SelectItem>
                 <SelectItem value="cactus">Cactus</SelectItem>
-                <SelectItem value="interior">Interior</SelectItem>
+                <SelectItem value="interior">Indoor</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select>
+            <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Disponibilidad" />
+                <SelectValue placeholder="Availability" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="disponible">Disponible</SelectItem>
-                <SelectItem value="no-disponible">No disponible</SelectItem>
+                <SelectItem value="todas">All</SelectItem>
+                <SelectItem value="disponible">Available</SelectItem>
+                <SelectItem value="no-disponible">Unavailable</SelectItem>
               </SelectContent>
             </Select>
+
             <Button>
-              <span className="hidden md:inline">➕ Añadir planta</span>
+              <span className="hidden md:inline">➕ Add Plant</span>
               <span className="md:hidden text-lg font-bold">＋</span>
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* 📋 Tabla de plantas */}
+      {/* 📋 Plants Table */}
       <Card className="mt-6">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Imagen</TableHead>
-                <TableHead>Nombre común</TableHead>
-                <TableHead>Nombre científico</TableHead>
-                <TableHead>Riego (días)</TableHead>
-                <TableHead>Editar</TableHead>
+                <TableHead>Image</TableHead>
+                <TableHead>Common Name</TableHead>
+                <TableHead>Scientific Name</TableHead>
+                <TableHead>Edit</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {paginated.map((plant) => (
                 <TableRow key={plant.id}>
@@ -120,18 +129,16 @@ export default function PlantsPage() {
                       className="w-12 h-12 rounded-lg object-cover shadow-sm"
                     />
                   </TableCell>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium max-w-[140px] truncate">
                     {plant.nombre_comun}
                   </TableCell>
-                  <TableCell className="italic text-muted-foreground">
+                  <TableCell className="italic text-muted-foreground max-w-[120px] truncate">
                     {plant.nombre_cientifico || "—"}
                   </TableCell>
-                  <TableCell>{plant.interval_days}</TableCell>
-                  <TableCell className="w-24">
-                    <div className="flex  gap-2">
-                      <Button>
-                        <span className="hidden md:inline">✏️</span>
-                        <span className="md:hidden text-lg">✏️</span>
+                  <TableCell className="w-24 truncate">
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline">
+                        ✏️
                       </Button>
                     </div>
                   </TableCell>
@@ -140,16 +147,16 @@ export default function PlantsPage() {
             </TableBody>
           </Table>
 
-          {/* 🪴 Sin resultados */}
+          {/* 🪴 Empty State */}
           {paginated.length === 0 && (
             <div className="text-center py-6 text-muted-foreground">
-              No se encontraron plantas.
+              No plants found.
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* 📄 Paginación */}
+      {/* 📄 Pagination */}
       <div className="mt-6">
         <Pagination>
           <PaginationContent>
