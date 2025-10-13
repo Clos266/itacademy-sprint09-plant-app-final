@@ -25,8 +25,8 @@ export const mainMenu: MenuType = [
   },
 
   {
-    title: "Dashboard",
-    url: "/dashboard",
+    title: "Events",
+    url: "/events",
     icon: Gauge,
   },
   {

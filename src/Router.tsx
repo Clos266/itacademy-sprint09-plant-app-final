@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/app-layout";
 import NotMatch from "./pages/NotMatch";
-import Dashboard from "./pages/Dashboard";
+import Events from "./pages/Events";
 import Login from "./pages/Login";
 import SignupPage from "./pages/Signup";
 import PlantsPage from "./pages/Plants";
@@ -13,7 +13,7 @@ export default function Router() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="events" element={<Events />} />
         <Route path="swaps" element={<SwapsPage />} />
         <Route path="plants" element={<PlantsPage />} />
         <Route path="pages">

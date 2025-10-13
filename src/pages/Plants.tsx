@@ -26,6 +26,7 @@ import {
   PaginationNext,
 } from "@/components/ui/pagination";
 import { mockPlants } from "@/data/mockPlants";
+import { Plus } from "lucide-react";
 
 export default function PlantsPage() {
   const [page, setPage] = useState(1);
@@ -99,8 +100,7 @@ export default function PlantsPage() {
             </Select>
 
             <Button>
-              <span className="hidden md:inline">➕ Add Plant</span>
-              <span className="md:hidden text-lg font-bold">＋</span>
+              <Plus />
             </Button>
           </div>
         </CardContent>

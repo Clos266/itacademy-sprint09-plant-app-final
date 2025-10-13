@@ -23,6 +23,7 @@ import {
   EyeIcon,
   CircleDotDashed,
   CheckCheck,
+  Plus,
 } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
 import { mockPlants } from "@/data/mockPlants";
@@ -313,8 +314,7 @@ export default function SwapsPage() {
 
       <div className="flex justify-end mt-6">
         <Button>
-          <span className="hidden md:inline">➕ Proponer intercambio</span>
-          <span className="md:hidden text-lg font-bold">＋</span>
+          <Plus />
         </Button>
       </div>
     </>
