@@ -16,7 +16,14 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { ArrowUpDown, Check, X, EyeIcon } from "lucide-react";
+import {
+  ArrowUpDown,
+  Check,
+  X,
+  EyeIcon,
+  CircleDotDashed,
+  CheckCheck,
+} from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
 import { mockPlants } from "@/data/mockPlants";
 import { mockUsers } from "@/data/mockUsers";
@@ -188,32 +195,27 @@ export default function SwapsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead
-                  onClick={() => handleSort("myPlantId")}
-                  className="cursor-pointer"
-                >
-                  Tu planta <ArrowUpDown className="inline w-4 h-4 ml-1" />
-                </TableHead>
-                <TableHead>Planta del otro usuario</TableHead>
+                <TableHead>Your Plant</TableHead>
+                <TableHead>Other User’s Plant</TableHead>
                 <TableHead
                   onClick={() => handleSort("userId")}
                   className="cursor-pointer"
                 >
-                  Usuario <ArrowUpDown className="inline w-4 h-4 ml-1" />
+                  User <ArrowUpDown className="inline w-4 h-4 ml-1" />
                 </TableHead>
                 <TableHead
                   onClick={() => handleSort("status")}
                   className="cursor-pointer"
                 >
-                  Estado <ArrowUpDown className="inline w-4 h-4 ml-1" />
+                  Status <ArrowUpDown className="inline w-4 h-4 ml-1" />
                 </TableHead>
                 <TableHead
                   onClick={() => handleSort("date")}
                   className="cursor-pointer"
                 >
-                  Fecha <ArrowUpDown className="inline w-4 h-4 ml-1" />
+                  Date <ArrowUpDown className="inline w-4 h-4 ml-1" />
                 </TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -261,22 +263,22 @@ export default function SwapsPage() {
                     <TableCell>
                       {swap.status === "pendiente" && (
                         <span className="text-yellow-600 font-medium">
-                          Pendiente
+                          <CircleDotDashed className="inline w-4 h-4" />
                         </span>
                       )}
                       {swap.status === "aceptado" && (
                         <span className="text-green-600 font-medium">
-                          Aceptado
+                          <Check className="inline w-4 h-4" />
                         </span>
                       )}
                       {swap.status === "rechazado" && (
                         <span className="text-red-600 font-medium">
-                          Rechazado
+                          <X className="inline w-4 h-4" />
                         </span>
                       )}
                       {swap.status === "completado" && (
                         <span className="text-gray-500 font-medium">
-                          Completado
+                          <CheckCheck className="inline w-4 h-4" />
                         </span>
                       )}
                     </TableCell>
