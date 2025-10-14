@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Leaf, MapPin, Filter, Search, RefreshCcw } from "lucide-react";
 import { mockPlants } from "@/data/mockPlants";
 import { mockUsers } from "@/data/mockUsers";
+import { ProposeSwapModal } from "@/components/swaps/ProposeSwapModal";
 
 export default function PlantsSwapPage() {
   const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
@@ -31,6 +32,8 @@ export default function PlantsSwapPage() {
 
   const selectedPlant =
     filteredPlants.find((p) => p.id === selectedPlantId) || null;
+  const [openSwap, setOpenSwap] = useState(false);
+  const [targetPlant, setTargetPlant] = useState<any>(null);
 
   return (
     <div className="min-h-screen space-y-6">
@@ -162,9 +165,8 @@ export default function PlantsSwapPage() {
                     className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      alert(
-                        `Propose swap with ${owner?.username || "this user"}`
-                      );
+                      setTargetPlant(plant);
+                      setOpenSwap(true);
                     }}
                   >
                     Propose Swap
@@ -186,6 +188,18 @@ export default function PlantsSwapPage() {
           </Card>
         )}
       </div>
+      <ProposeSwapModal
+        open={openSwap}
+        onOpenChange={setOpenSwap}
+        targetPlant={targetPlant}
+        userPlants={mockPlants.filter((p) => p.disponible)} // simula tus plantas disponibles
+        onConfirm={(proposal) => {
+          console.log("📩 New swap proposal:", proposal);
+          alert(
+            `Swap proposed: your plant #${proposal.offeredPlantId} for plant #${proposal.targetPlantId}`
+          );
+        }}
+      />
     </div>
   );
 }
