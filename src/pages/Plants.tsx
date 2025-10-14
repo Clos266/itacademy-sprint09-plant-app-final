@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/pagination";
 import { mockPlants } from "@/data/mockPlants";
 import { Plus } from "lucide-react";
+import { NewPlantButton } from "@/components/Plants/NewPlantModal";
 
 export default function PlantsPage() {
   const [page, setPage] = useState(1);
@@ -100,7 +101,7 @@ export default function PlantsPage() {
             </Select>
 
             <Button>
-              <Plus />
+              <NewPlantButton />
             </Button>
           </div>
         </CardContent>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { CalendarDays, MapPin, Filter, Search, Plus } from "lucide-react";
 import { mockEvents } from "@/data/mockEvents";
 import { mockUsers } from "@/data/mockUsers";
+import { NewEventButton } from "@/components/Events/NewEventModal";
 
 export default function EventsPage() {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
@@ -80,7 +81,7 @@ export default function EventsPage() {
               Past
             </Button>
             <Button className="ml-auto">
-              <Plus />
+              <NewEventButton />
             </Button>
           </div>
         </CardContent>
