@@ -93,22 +93,6 @@ export function AppHeader() {
             </nav>
           </div>
           <nav className="flex gap-1">
-            <a
-              href={appConfig.github.url}
-              title={appConfig.github.title}
-              target="_blank"
-              rel="noreferrer"
-              className={cn(
-                buttonVariants({
-                  variant: "ghost",
-                  size: "icon",
-                }),
-                "size-8"
-              )}
-            >
-              <GitHub />
-              <span className="sr-only">GitHub</span>
-            </a>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

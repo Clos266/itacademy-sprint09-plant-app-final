@@ -28,68 +28,18 @@ import {
 import { Toggle } from "@/components/ui/toggle";
 import { mockPlants } from "@/data/mockPlants";
 import { mockUsers } from "@/data/mockUsers";
-
-interface Swap {
-  id: number;
-  myPlantId: number;
-  otherPlantId: number;
-  userId: string;
-  status: "pendiente" | "aceptado" | "rechazado" | "completado";
-  date: string;
-}
+import { mockSwaps } from "@/data/mockSwaps";
 
 export default function SwapsPage() {
-  const [sortColumn, setSortColumn] = useState<keyof Swap>("date");
+  const [sortColumn, setSortColumn] =
+    useState<keyof (typeof mockSwaps)[0]>("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-
-  const mockSwaps: Swap[] = [
-    {
-      id: 1,
-      myPlantId: 1,
-      otherPlantId: 6,
-      userId: "u1",
-      status: "pendiente",
-      date: "2025-10-09",
-    },
-    {
-      id: 2,
-      myPlantId: 2,
-      otherPlantId: 8,
-      userId: "u2",
-      status: "aceptado",
-      date: "2025-10-07",
-    },
-    {
-      id: 3,
-      myPlantId: 3,
-      otherPlantId: 4,
-      userId: "u3",
-      status: "completado",
-      date: "2025-10-05",
-    },
-    {
-      id: 4,
-      myPlantId: 5,
-      otherPlantId: 9,
-      userId: "u4",
-      status: "pendiente",
-      date: "2025-10-08",
-    },
-    {
-      id: 5,
-      myPlantId: 7,
-      otherPlantId: 10,
-      userId: "u5",
-      status: "rechazado",
-      date: "2025-10-03",
-    },
-  ];
 
   const getPlantById = (id: number) => mockPlants.find((p) => p.id === id);
   const getUserById = (id: string) => mockUsers.find((u) => u.id === id);
 
-  // 🔹 Ordenar
+  // 🔹 Sorting
   const handleSort = (column: keyof Swap) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -99,7 +49,7 @@ export default function SwapsPage() {
     }
   };
 
-  // 🔹 Filtros toggle acumulables
+  // 🔹 Toggle filters (accumulative)
   const toggleFilter = (status: string) => {
     setActiveFilters((prev) =>
       prev.includes(status)
@@ -126,71 +76,70 @@ export default function SwapsPage() {
   return (
     <>
       <PageHeader>
-        <PageHeaderHeading>🔁 Intercambios</PageHeaderHeading>
+        <PageHeaderHeading>🔁 Plant Swaps</PageHeaderHeading>
       </PageHeader>
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Mis intercambios de plantas</CardTitle>
+          <CardTitle>My Plant Swaps</CardTitle>
           <CardDescription>
-            Aquí podrás ver, aceptar o proponer intercambios con otros usuarios
-            🌱
+            Here you can view, accept, or propose swaps with other users 🌱
           </CardDescription>
         </CardHeader>
       </Card>
 
-      {/* Filtros con Toggle */}
+      {/* Filters with Toggle */}
       <div className="flex flex-wrap gap-2 mb-4">
         <Toggle
-          pressed={activeFilters.includes("pendiente")}
-          onPressedChange={() => toggleFilter("pendiente")}
+          pressed={activeFilters.includes("pending")}
+          onPressedChange={() => toggleFilter("pending")}
           className={`${
-            activeFilters.includes("pendiente")
+            activeFilters.includes("pending")
               ? "bg-yellow-500 text-white hover:bg-yellow-600"
               : "border border-yellow-500 text-yellow-600 hover:bg-yellow-100"
           }`}
         >
-          Pendiente
+          Pending
         </Toggle>
 
         <Toggle
-          pressed={activeFilters.includes("aceptado")}
-          onPressedChange={() => toggleFilter("aceptado")}
+          pressed={activeFilters.includes("accepted")}
+          onPressedChange={() => toggleFilter("accepted")}
           className={`${
-            activeFilters.includes("aceptado")
+            activeFilters.includes("accepted")
               ? "bg-green-600 text-white hover:bg-green-700"
               : "border border-green-600 text-green-700 hover:bg-green-100"
           }`}
         >
-          Aceptado
+          Accepted
         </Toggle>
 
         <Toggle
-          pressed={activeFilters.includes("rechazado")}
-          onPressedChange={() => toggleFilter("rechazado")}
+          pressed={activeFilters.includes("rejected")}
+          onPressedChange={() => toggleFilter("rejected")}
           className={`${
-            activeFilters.includes("rechazado")
+            activeFilters.includes("rejected")
               ? "bg-red-600 text-white hover:bg-red-700"
               : "border border-red-600 text-red-700 hover:bg-red-100"
           }`}
         >
-          Rechazado
+          Rejected
         </Toggle>
 
         <Toggle
-          pressed={activeFilters.includes("completado")}
-          onPressedChange={() => toggleFilter("completado")}
+          pressed={activeFilters.includes("completed")}
+          onPressedChange={() => toggleFilter("completed")}
           className={`${
-            activeFilters.includes("completado")
+            activeFilters.includes("completed")
               ? "bg-gray-600 text-white hover:bg-gray-700"
               : "border border-gray-600 text-gray-700 hover:bg-gray-100"
           }`}
         >
-          Completado
+          Completed
         </Toggle>
       </div>
 
-      {/* Tabla */}
+      {/* Table */}
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -262,22 +211,22 @@ export default function SwapsPage() {
                     </TableCell>
 
                     <TableCell>
-                      {swap.status === "pendiente" && (
+                      {swap.status === "pending" && (
                         <span className="text-yellow-600 font-medium">
                           <CircleDotDashed className="inline w-4 h-4" />
                         </span>
                       )}
-                      {swap.status === "aceptado" && (
+                      {swap.status === "accepted" && (
                         <span className="text-green-600 font-medium">
                           <Check className="inline w-4 h-4" />
                         </span>
                       )}
-                      {swap.status === "rechazado" && (
+                      {swap.status === "rejected" && (
                         <span className="text-red-600 font-medium">
                           <X className="inline w-4 h-4" />
                         </span>
                       )}
-                      {swap.status === "completado" && (
+                      {swap.status === "completed" && (
                         <span className="text-gray-500 font-medium">
                           <CheckCheck className="inline w-4 h-4" />
                         </span>
@@ -288,7 +237,7 @@ export default function SwapsPage() {
 
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {swap.status === "pendiente" ? (
+                        {swap.status === "pending" ? (
                           <>
                             <Button size="sm">
                               <Check />

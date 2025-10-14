@@ -1,11 +1,11 @@
 import {
   CircleAlert,
   Files,
-  Gauge,
   LucideIcon,
   HomeIcon,
   LeafIcon,
   ArrowLeftRight,
+  MapPin,
 } from "lucide-react";
 
 type MenuItemType = {
@@ -27,7 +27,7 @@ export const mainMenu: MenuType = [
   {
     title: "Events",
     url: "/events",
-    icon: Gauge,
+    icon: MapPin,
   },
   {
     title: "Swaps",
@@ -35,7 +35,7 @@ export const mainMenu: MenuType = [
     icon: ArrowLeftRight,
   },
   {
-    title: "Plants",
+    title: "myPlants",
     url: "/plants",
     icon: LeafIcon,
   },

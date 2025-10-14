@@ -20,7 +20,7 @@ export const mockEvents: Event[] = [
   },
   {
     id: 2,
-    title: "🪴 Taller de Macetas Recicladas",
+    title: "Taller de Macetas Recicladas",
     description:
       "Aprende a crear macetas sostenibles con materiales reutilizados.",
     date: "2025-09-12",
@@ -44,6 +44,54 @@ export const mockEvents: Event[] = [
     date: "2025-11-05",
     location: "Centro Cultural La Tierra, Sevilla",
     user_id: "u4",
+    image_url: "/public/mockevents/event2.webp",
+  },
+  {
+    id: 5,
+    title: "🌸 Paseo Botánico Guiado",
+    description:
+      "Un recorrido por el jardín botánico para aprender sobre flora local.",
+    date: "2025-12-10",
+    location: "Jardín Botánico, Madrid",
+    user_id: "u5",
+    image_url: "/public/mockevents/tallerdemacetas.jpeg",
+  },
+  {
+    id: 6,
+    title: "🌿 Plant Swap en el Parque Central",
+    description:
+      "Un evento para intercambiar plantas y aprender sobre jardinería.",
+    date: "2025-10-25",
+    location: "Parque Central, Barcelona",
+    user_id: "u1",
     image_url: "/public/mockevents/tallerdecactus.webp",
+  },
+  {
+    id: 7,
+    title: " Taller de Macetas Recicladas",
+    description:
+      "Aprende a crear macetas sostenibles con materiales reutilizados.",
+    date: "2025-09-12",
+    location: "Casa Verde, Madrid",
+    user_id: "u2",
+    image_url: "/public/mockevents/tallerdemacetas.jpeg",
+  },
+  {
+    id: 8,
+    title: "🌵 Quedada Cactus Lovers",
+    description: "Un encuentro para compartir y admirar colecciones de cactus.",
+    date: "2025-08-15",
+    location: "Jardín Botánico, Valencia",
+    user_id: "u3",
+    image_url: "/public/mockevents/tallerdecactus.webp",
+  },
+  {
+    id: 9,
+    title: "🌼 Feria de Intercambio de Semillas",
+    description: "Comparte y consigue semillas de distintas especies.",
+    date: "2025-11-05",
+    location: "Centro Cultural La Tierra, Sevilla",
+    user_id: "u4",
+    image_url: "/public/mockevents/event2.webp",
   },
 ];

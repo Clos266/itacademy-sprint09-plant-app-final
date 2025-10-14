@@ -87,7 +87,7 @@ export default function EventsPage() {
       </Card>
 
       {/* 📅 Event list */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredEvents.map((event) => {
           const isUpcoming = new Date(event.date) > new Date();
           const isSelected = selectedEventId === event.id;
@@ -96,61 +96,63 @@ export default function EventsPage() {
           return (
             <Card
               key={event.id}
-              className={`transition-all cursor-pointer overflow-hidden ${
+              className={`transition-all cursor-pointer overflow-hidden flex flex-col ${
                 isSelected ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md"
               }`}
               onClick={() => setSelectedEventId(event.id)}
             >
-              {/* 📸 Event image */}
-              <div className="relative h-48 w-full">
-                <img
-                  src={event.image_url || "/placeholder-event.jpg"}
-                  alt={event.title}
-                  className="object-cover w-full h-full"
-                />
-                <div className="absolute top-3 left-3">
-                  <Badge variant={isUpcoming ? "default" : "secondary"}>
-                    {isUpcoming ? "Upcoming" : "Past"}
-                  </Badge>
+              {/* 📸 Imagen dentro del padding */}
+              <CardContent className="p-4 pb-0">
+                <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
+                  <img
+                    src={event.image_url || "/placeholder-event.jpg"}
+                    alt={event.title}
+                    className="object-cover w-full h-full"
+                  />
+                  <div className="absolute top-3 left-3">
+                    <Badge variant={isUpcoming ? "default" : "secondary"}>
+                      {isUpcoming ? "Upcoming" : "Past"}
+                    </Badge>
+                  </div>
                 </div>
-              </div>
+              </CardContent>
 
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between mb-1">
+              {/* 📝 Contenido principal */}
+              <CardHeader className="flex-1 flex flex-col justify-between">
+                <div>
                   <h3 className="text-xl font-bold truncate">{event.title}</h3>
+                  <p className="text-muted-foreground text-sm line-clamp-2 h-[60px] mb-2">
+                    {event.description}
+                  </p>
+
+                  <div className="flex items-center gap-2 text-sm mb-1">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="truncate">{event.location}</span>
+                  </div>
+
+                  {organizer && (
+                    <div className="flex items-center gap-2 text-sm mb-1">
+                      <img
+                        src={organizer.avatar_url}
+                        alt={organizer.username}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                      <span className="text-muted-foreground">
+                        by {organizer.username}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <CalendarDays className="h-4 w-4" />
                     <span>{new Date(event.date).toLocaleDateString()}</span>
                   </div>
                 </div>
-              </CardHeader>
 
-              <CardContent className="space-y-3">
-                <p className="text-muted-foreground text-sm line-clamp-2">
-                  {event.description}
-                </p>
-
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="truncate">{event.location}</span>
-                </div>
-
-                {organizer && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <img
-                      src={organizer.avatar_url}
-                      alt={organizer.username}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                    <span className="text-muted-foreground">
-                      by {organizer.username}
-                    </span>
-                  </div>
-                )}
-
-                {isUpcoming && (
+                {/* 🔹 Botón siempre al fondo */}
+                <div className="mt-4">
                   <Button
-                    className="w-full mt-3"
+                    className="w-full"
                     onClick={(e) => {
                       e.stopPropagation();
                       alert(`Viewing details for: ${event.title}`);
@@ -158,8 +160,8 @@ export default function EventsPage() {
                   >
                     View Details
                   </Button>
-                )}
-              </CardContent>
+                </div>
+              </CardHeader>
             </Card>
           );
         })}
