@@ -1,5 +1,4 @@
 import {
-  CircleAlert,
   Files,
   LucideIcon,
   HomeIcon,
@@ -35,7 +34,7 @@ export const mainMenu: MenuType = [
     icon: ArrowLeftRight,
   },
   {
-    title: "myPlants",
+    title: "my Plants",
     url: "/plants",
     icon: LeafIcon,
   },
@@ -55,11 +54,11 @@ export const mainMenu: MenuType = [
         url: "/pages/signup",
         icon: Files,
       },
+      {
+        title: "Create Profile",
+        url: "/pages/new-profile",
+        icon: Files,
+      },
     ],
-  },
-  {
-    title: "Error",
-    url: "/404",
-    icon: CircleAlert,
   },
 ];
