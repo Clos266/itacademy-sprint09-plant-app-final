@@ -8,6 +8,7 @@ export interface Plant {
   interval_days?: number;
   last_watered?: string;
   image_url?: string;
+  notas?: string | null;
 }
 
 export const mockPlants: Plant[] = [

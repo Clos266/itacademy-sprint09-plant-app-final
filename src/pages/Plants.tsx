@@ -25,11 +25,16 @@ import {
   PaginationPrevious,
   PaginationNext,
 } from "@/components/ui/pagination";
-import { mockPlants } from "@/data/mockPlants";
-import { Plus } from "lucide-react";
+import { mockPlants as initialMockPlants } from "@/data/mockPlants";
 import { NewPlantButton } from "@/components/Plants/NewPlantModal";
+import { EditPlantModal } from "@/components/Plants/EditPlantModal";
+import { Pencil } from "lucide-react";
 
 export default function PlantsPage() {
+  const [plants, setPlants] = useState(initialMockPlants);
+  const [selectedPlant, setSelectedPlant] = useState<any>(null);
+  const [openEdit, setOpenEdit] = useState(false);
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("todas");
@@ -37,8 +42,8 @@ export default function PlantsPage() {
 
   const itemsPerPage = 5;
 
-  // 🔹 Filtro por nombre, categoría y disponibilidad
-  const filtered = mockPlants.filter(
+  // 🔹 Filtering
+  const filtered = plants.filter(
     (p) =>
       p.nombre_comun.toLowerCase().includes(search.toLowerCase()) &&
       (filter === "todas" ||
@@ -48,7 +53,7 @@ export default function PlantsPage() {
         p.especie?.toLowerCase().includes(category.toLowerCase()))
   );
 
-  // 🔹 Paginación
+  // 🔹 Pagination
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginated = filtered.slice(
     (page - 1) * itemsPerPage,
@@ -57,6 +62,19 @@ export default function PlantsPage() {
 
   const handlePrevious = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
+
+  // 🔹 Handle edit
+  const handleEdit = (plant: any) => {
+    setSelectedPlant(plant);
+    setOpenEdit(true);
+  };
+
+  // 🔹 Save edits (updates local mock array)
+  const handleSave = (id: number, updated: Partial<any>) => {
+    setPlants((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updated } : p))
+    );
+  };
 
   return (
     <>
@@ -100,9 +118,8 @@ export default function PlantsPage() {
               </SelectContent>
             </Select>
 
-            <Button>
-              <NewPlantButton />
-            </Button>
+            {/* ✅ This button works fine on its own */}
+            <NewPlantButton />
           </div>
         </CardContent>
       </Card>
@@ -137,11 +154,13 @@ export default function PlantsPage() {
                     {plant.nombre_cientifico || "—"}
                   </TableCell>
                   <TableCell className="w-24 truncate">
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
-                        ✏️
-                      </Button>
-                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEdit(plant)}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -190,6 +209,14 @@ export default function PlantsPage() {
           </PaginationContent>
         </Pagination>
       </div>
+
+      {/* 🪴 Edit Modal */}
+      <EditPlantModal
+        open={openEdit}
+        onOpenChange={setOpenEdit}
+        plant={selectedPlant}
+        onSave={handleSave}
+      />
     </>
   );
 }
