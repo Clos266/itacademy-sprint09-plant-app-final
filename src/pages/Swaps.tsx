@@ -72,6 +72,12 @@ export default function SwapsPage() {
     }
     return 0;
   });
+  const formatDate = (isoDate: string) => {
+    return new Date(isoDate).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+    });
+  };
 
   return (
     <>
@@ -153,12 +159,12 @@ export default function SwapsPage() {
                 >
                   User <ArrowUpDown className="inline w-4 h-4 ml-1" />
                 </TableHead>
-                <TableHead
+                {/* <TableHead
                   onClick={() => handleSort("status")}
                   className="cursor-pointer"
                 >
                   Status <ArrowUpDown className="inline w-4 h-4 ml-1" />
-                </TableHead>
+                </TableHead> */}
                 <TableHead
                   onClick={() => handleSort("date")}
                   className="cursor-pointer"
@@ -206,11 +212,13 @@ export default function SwapsPage() {
                           alt={user?.username}
                           className="w-8 h-8 rounded-full object-cover"
                         />
-                        <span>@{user?.username}</span>
+                        <span className="hidden sm:inline">
+                          @{user?.username}
+                        </span>
                       </div>
                     </TableCell>
 
-                    <TableCell>
+                    {/* <TableCell>
                       {swap.status === "pending" && (
                         <span className="text-yellow-600 font-medium">
                           <CircleDotDashed className="inline w-4 h-4" />
@@ -231,9 +239,13 @@ export default function SwapsPage() {
                           <CheckCheck className="inline w-4 h-4" />
                         </span>
                       )}
-                    </TableCell>
+                    </TableCell> */}
 
-                    <TableCell>{swap.date}</TableCell>
+                    <TableCell>
+                      <span className="text-xs sm:text-sm text-muted-foreground">
+                        {formatDate(swap.date)}
+                      </span>
+                    </TableCell>
 
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
