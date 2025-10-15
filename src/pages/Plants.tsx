@@ -18,13 +18,16 @@ import { mockPlants as initialMockPlants } from "@/data/mockPlants";
 import type { Plant } from "@/data/mockPlants";
 import { NewPlantButton } from "@/components/Plants/NewPlantModal";
 import { EditPlantModal } from "@/components/Plants/EditPlantModal";
+import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
 import { Pencil } from "lucide-react";
 
 export default function PlantsPage() {
   // 🌱 State
   const [plants, setPlants] = useState<Plant[]>(initialMockPlants);
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
+
   const [openEdit, setOpenEdit] = useState(false);
+  const [openDetails, setOpenDetails] = useState(false);
 
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<
@@ -56,6 +59,12 @@ export default function PlantsPage() {
   const handleEdit = (plant: Plant) => {
     setSelectedPlant(plant);
     setOpenEdit(true);
+  };
+
+  // 👁️ Details modal handler
+  const handleOpenDetails = (plant: Plant) => {
+    setSelectedPlant(plant);
+    setOpenDetails(true);
   };
 
   const handleSave = (id: number, updated: Partial<Plant>) => {
@@ -127,6 +136,7 @@ export default function PlantsPage() {
           />
         </CardContent>
       </Card>
+
       {/* 📋 Plants Table */}
       <PaginatedTable
         data={paginated}
@@ -138,11 +148,16 @@ export default function PlantsPage() {
               <img
                 src={p.image_url}
                 alt={p.nombre_comun}
-                className="w-12 h-12 rounded-lg object-cover shadow-sm"
+                className="w-12 h-12 rounded-lg object-cover shadow-sm cursor-pointer transition-transform hover:scale-105"
+                onClick={() => handleOpenDetails(p)}
               />
             ),
           },
-          { key: "nombre_comun", header: "Common Name" },
+          {
+            key: "nombre_comun",
+            header: "Common Name",
+            render: (p) => <span>{p.nombre_comun}</span>,
+          },
           {
             key: "nombre_cientifico",
             header: "Scientific Name",
@@ -162,6 +177,14 @@ export default function PlantsPage() {
         totalPages={totalPages}
         onPageChange={goToPage}
       />
+
+      {/* 👁️ Details Modal */}
+      <PlantDetailsModal
+        open={openDetails}
+        onOpenChange={setOpenDetails}
+        plant={selectedPlant}
+      />
+
       {/* ✏️ Edit Modal */}
       <EditPlantModal
         open={openEdit}

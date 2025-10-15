@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import { PaginatedTable } from "@/components/common/PaginatedTable";
 import { usePagination } from "@/hooks/usePagination";
 import { Toggle } from "@/components/ui/toggle";
-import { ArrowUpDown, Check, X, EyeIcon, Plus } from "lucide-react";
+import { ArrowUpDown, Check, X, Plus } from "lucide-react";
 
 import { mockPlants } from "@/data/mockPlants";
 import { mockUsers } from "@/data/mockUsers";
 import { mockSwaps } from "@/data/mockSwaps";
+import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
+import { UserDetailsModal } from "@/Users/UserDetailsModal";
 
 type SwapStatus = "pending" | "accepted" | "rejected" | "completed";
 
@@ -28,10 +30,12 @@ interface Swap {
 }
 
 export default function SwapsPage() {
-  // 👉 datos base
+  // 👉 base data
   const [swaps] = useState<Swap[]>(mockSwaps as Swap[]);
+  const [selectedPlant, setSelectedPlant] = useState<null | number>(null);
+  const [selectedUser, setSelectedUser] = useState<null | string>(null);
 
-  // 👉 filtros + orden
+  // 👉 filters + sorting
   const [activeStatuses, setActiveStatuses] = useState<SwapStatus[]>([]);
   const [sortColumn, setSortColumn] = useState<keyof Swap>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -49,7 +53,7 @@ export default function SwapsPage() {
     }
   };
 
-  // 👉 filtrar + ordenar
+  // 👉 filter + sort
   const filtered = swaps.filter(
     (s) => activeStatuses.length === 0 || activeStatuses.includes(s.status)
   );
@@ -63,7 +67,7 @@ export default function SwapsPage() {
     return 0;
   });
 
-  // 👉 paginación REAL (si aquí no ves los controles, es porque totalPages === 1)
+  // 👉 pagination
   const { page, totalPages, paginated, goToPage } = usePagination(sorted, 5);
 
   // helpers
@@ -74,6 +78,14 @@ export default function SwapsPage() {
       day: "2-digit",
       month: "short",
     });
+
+  const selectedPlantData = selectedPlant
+    ? mockPlants.find((p) => p.id === selectedPlant)
+    : null;
+
+  const selectedUserData = selectedUser
+    ? mockUsers.find((u) => u.id === selectedUser)
+    : null;
 
   return (
     <>
@@ -88,7 +100,7 @@ export default function SwapsPage() {
         </CardHeader>
       </Card>
 
-      {/* Filtros compactos por estado */}
+      {/* Compact filters by status */}
       <div className="flex flex-wrap gap-2 mb-4">
         {(["pending", "accepted", "rejected", "completed"] as SwapStatus[]).map(
           (s) => (
@@ -108,7 +120,7 @@ export default function SwapsPage() {
         )}
       </div>
 
-      {/* Tabla + paginación (con 2 columnas clicables para ordenar) */}
+      {/* Table + pagination */}
       <PaginatedTable
         data={paginated}
         columns={[
@@ -122,7 +134,8 @@ export default function SwapsPage() {
                   <img
                     src={p?.image_url || "/placeholder.jpg"}
                     alt={p?.nombre_comun}
-                    className="w-10 h-10 rounded-lg object-cover"
+                    className="w-10 h-10 rounded-lg object-cover cursor-pointer transition-transform hover:scale-105"
+                    onClick={() => setSelectedPlant(swap.myPlantId)}
                   />
                   <span>{p?.nombre_comun}</span>
                 </div>
@@ -139,7 +152,8 @@ export default function SwapsPage() {
                   <img
                     src={p?.image_url || "/placeholder.jpg"}
                     alt={p?.nombre_comun}
-                    className="w-10 h-10 rounded-lg object-cover"
+                    className="w-10 h-10 rounded-lg object-cover cursor-pointer transition-transform hover:scale-105"
+                    onClick={() => setSelectedPlant(swap.otherPlantId)}
                   />
                   <span>{p?.nombre_comun}</span>
                 </div>
@@ -156,7 +170,7 @@ export default function SwapsPage() {
               >
                 User <ArrowUpDown className="w-4 h-4 ml-1" />
               </button>
-            ) as unknown as string, // header permite ReactNode en tu tabla genérica
+            ) as unknown as string,
             render: (swap: Swap) => {
               const u = getUser(swap.userId);
               return (
@@ -164,7 +178,8 @@ export default function SwapsPage() {
                   <img
                     src={u?.avatar_url}
                     alt={u?.username}
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-8 h-8 rounded-full object-cover cursor-pointer transition-transform hover:scale-105"
+                    onClick={() => setSelectedUser(swap.userId)} // ✅ open user modal on click
                   />
                   <span className="hidden sm:inline">@{u?.username}</span>
                 </div>
@@ -202,11 +217,7 @@ export default function SwapsPage() {
                       <X />
                     </Button>
                   </>
-                ) : (
-                  <Button size="sm" variant="ghost">
-                    <EyeIcon />
-                  </Button>
-                )}
+                ) : null}
               </div>
             ),
           },
@@ -222,6 +233,20 @@ export default function SwapsPage() {
           <Plus />
         </Button>
       </div>
+
+      {/* ✅ Plant Details Modal */}
+      <PlantDetailsModal
+        open={!!selectedPlant}
+        onOpenChange={(open) => !open && setSelectedPlant(null)}
+        plant={selectedPlantData}
+      />
+
+      {/* ✅ User Details Modal */}
+      <UserDetailsModal
+        open={!!selectedUser}
+        onOpenChange={(open) => !open && setSelectedUser(null)}
+        user={selectedUserData}
+      />
     </>
   );
 }
