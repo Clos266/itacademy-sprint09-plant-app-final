@@ -70,7 +70,7 @@ export default function PlantsPage() {
       <PageHeader>
         <PageHeaderHeading>🌿 My Plants</PageHeaderHeading>
       </PageHeader>
-      // 🔍 Search + Filters
+
       <Card className="mt-4">
         <CardContent>
           <FilterBar
