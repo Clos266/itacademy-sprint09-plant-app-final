@@ -3,8 +3,11 @@ import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Leaf, MapPin, Filter, Search, RefreshCcw } from "lucide-react";
+import { Leaf, MapPin, Filter, RefreshCcw } from "lucide-react";
+
+import { FilterBar } from "@/components/common/FilterBar";
+import { SearchInput } from "@/components/common/SearchInput";
+
 import { mockPlants } from "@/data/mockPlants";
 import { mockUsers } from "@/data/mockUsers";
 import { ProposeSwapModal } from "@/components/swaps/ProposeSwapModal";
@@ -15,6 +18,9 @@ export default function PlantsSwapPage() {
     "all" | "available" | "unavailable"
   >("all");
   const [search, setSearch] = useState("");
+
+  const [openSwap, setOpenSwap] = useState(false);
+  const [targetPlant, setTargetPlant] = useState<any>(null);
 
   // 🔹 Filtering + Search
   const filteredPlants = mockPlants.filter((plant) => {
@@ -32,8 +38,6 @@ export default function PlantsSwapPage() {
 
   const selectedPlant =
     filteredPlants.find((p) => p.id === selectedPlantId) || null;
-  const [openSwap, setOpenSwap] = useState(false);
-  const [targetPlant, setTargetPlant] = useState<any>(null);
 
   return (
     <div className="min-h-screen space-y-6">
@@ -46,52 +50,50 @@ export default function PlantsSwapPage() {
 
       {/* 🔍 Search + Filters */}
       <Card>
-        <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 p-4">
-          {/* Search Field */}
-          <div className="flex items-center gap-2 w-full md:w-1/2">
-            <Input
-              placeholder="Search plants or species..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <Button variant="outline">
-              <Search className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Filters */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Button
-              variant={filterType === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterType("all")}
-            >
-              All
-            </Button>
-            <Button
-              variant={filterType === "available" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterType("available")}
-            >
-              Available
-            </Button>
-            <Button
-              variant={filterType === "unavailable" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterType("unavailable")}
-            >
-              Unavailable
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="ml-auto"
-              onClick={() => setSearch("")}
-            >
-              <RefreshCcw className="w-4 h-4" />
-            </Button>
-          </div>
+        <CardContent>
+          <FilterBar
+            searchComponent={
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                onClear={() => setSearch("")}
+                placeholder="Search plants or species..."
+              />
+            }
+            filters={
+              <>
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Button
+                  variant={filterType === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterType("all")}
+                >
+                  All
+                </Button>
+                <Button
+                  variant={filterType === "available" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterType("available")}
+                >
+                  Available
+                </Button>
+                <Button
+                  variant={filterType === "unavailable" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterType("unavailable")}
+                >
+                  Unavailable
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSearch("")}
+                >
+                  <RefreshCcw className="w-4 h-4" />
+                </Button>
+              </>
+            }
+          />
         </CardContent>
       </Card>
 
@@ -118,8 +120,10 @@ export default function PlantsSwapPage() {
                     className="object-cover w-full h-full"
                   />
                   <div className="absolute top-3 left-3">
-                    <Badge variant={plant.disponible ? "default" : "secondary"}>
-                      {plant.disponible ? "Available" : "Not available"}
+                    <Badge
+                      variant={plant.disponible ? "default" : "destructive"}
+                    >
+                      {plant.disponible ? "Available" : "Unavailable"}
                     </Badge>
                   </div>
                 </div>
@@ -188,6 +192,8 @@ export default function PlantsSwapPage() {
           </Card>
         )}
       </div>
+
+      {/* 🤝 Swap Modal */}
       <ProposeSwapModal
         open={openSwap}
         onOpenChange={setOpenSwap}

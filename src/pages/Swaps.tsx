@@ -5,79 +5,75 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table";
-import {
-  ArrowUpDown,
-  Check,
-  X,
-  EyeIcon,
-  CircleDotDashed,
-  CheckCheck,
-  Plus,
-} from "lucide-react";
+import { PaginatedTable } from "@/components/common/PaginatedTable";
+import { usePagination } from "@/hooks/usePagination";
 import { Toggle } from "@/components/ui/toggle";
+import { ArrowUpDown, Check, X, EyeIcon, Plus } from "lucide-react";
+
 import { mockPlants } from "@/data/mockPlants";
 import { mockUsers } from "@/data/mockUsers";
 import { mockSwaps } from "@/data/mockSwaps";
 
+type SwapStatus = "pending" | "accepted" | "rejected" | "completed";
+
+interface Swap {
+  id: number;
+  myPlantId: number;
+  otherPlantId: number;
+  userId: string;
+  date: string; // ISO
+  status: SwapStatus;
+}
+
 export default function SwapsPage() {
-  const [sortColumn, setSortColumn] =
-    useState<keyof (typeof mockSwaps)[0]>("date");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  // 👉 datos base
+  const [swaps] = useState<Swap[]>(mockSwaps as Swap[]);
 
-  const getPlantById = (id: number) => mockPlants.find((p) => p.id === id);
-  const getUserById = (id: string) => mockUsers.find((u) => u.id === id);
+  // 👉 filtros + orden
+  const [activeStatuses, setActiveStatuses] = useState<SwapStatus[]>([]);
+  const [sortColumn, setSortColumn] = useState<keyof Swap>("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  // 🔹 Sorting
-  const handleSort = (column: keyof Swap) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortColumn(column);
-      setSortDirection("asc");
+  const toggleStatus = (s: SwapStatus) =>
+    setActiveStatuses((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    );
+
+  const handleSort = (col: keyof Swap) => {
+    if (col === sortColumn) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortColumn(col);
+      setSortDir("asc");
     }
   };
 
-  // 🔹 Toggle filters (accumulative)
-  const toggleFilter = (status: string) => {
-    setActiveFilters((prev) =>
-      prev.includes(status)
-        ? prev.filter((f) => f !== status)
-        : [...prev, status]
-    );
-  };
-
-  const filteredSwaps = mockSwaps.filter(
-    (swap) => activeFilters.length === 0 || activeFilters.includes(swap.status)
+  // 👉 filtrar + ordenar
+  const filtered = swaps.filter(
+    (s) => activeStatuses.length === 0 || activeStatuses.includes(s.status)
   );
 
-  const sortedSwaps = [...filteredSwaps].sort((a, b) => {
-    const valueA = a[sortColumn];
-    const valueB = b[sortColumn];
-    if (typeof valueA === "string" && typeof valueB === "string") {
-      return sortDirection === "asc"
-        ? valueA.localeCompare(valueB)
-        : valueB.localeCompare(valueA);
+  const sorted = [...filtered].sort((a, b) => {
+    const A = a[sortColumn];
+    const B = b[sortColumn];
+    if (typeof A === "string" && typeof B === "string") {
+      return sortDir === "asc" ? A.localeCompare(B) : B.localeCompare(A);
     }
     return 0;
   });
-  const formatDate = (isoDate: string) => {
-    return new Date(isoDate).toLocaleDateString("en-GB", {
+
+  // 👉 paginación REAL (si aquí no ves los controles, es porque totalPages === 1)
+  const { page, totalPages, paginated, goToPage } = usePagination(sorted, 5);
+
+  // helpers
+  const getPlant = (id: number) => mockPlants.find((p) => p.id === id);
+  const getUser = (id: string) => mockUsers.find((u) => u.id === id);
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "short",
     });
-  };
 
   return (
     <>
@@ -85,194 +81,142 @@ export default function SwapsPage() {
         <PageHeaderHeading>🔁 Plant Swaps</PageHeaderHeading>
       </PageHeader>
 
-      <Card className="mb-6">
+      <Card className="mb-4">
         <CardHeader>
           <CardTitle>My Plant Swaps</CardTitle>
-          <CardDescription>
-            Here you can view, accept, or propose swaps with other users 🌱
-          </CardDescription>
+          <CardDescription>View, accept, or propose swaps 🌱</CardDescription>
         </CardHeader>
       </Card>
 
-      {/* Filters with Toggle */}
+      {/* Filtros compactos por estado */}
       <div className="flex flex-wrap gap-2 mb-4">
-        <Toggle
-          pressed={activeFilters.includes("pending")}
-          onPressedChange={() => toggleFilter("pending")}
-          className={`${
-            activeFilters.includes("pending")
-              ? "bg-yellow-500 text-white hover:bg-yellow-600"
-              : "border border-yellow-500 text-yellow-600 hover:bg-yellow-100"
-          }`}
-        >
-          Pending
-        </Toggle>
-
-        <Toggle
-          pressed={activeFilters.includes("accepted")}
-          onPressedChange={() => toggleFilter("accepted")}
-          className={`${
-            activeFilters.includes("accepted")
-              ? "bg-green-600 text-white hover:bg-green-700"
-              : "border border-green-600 text-green-700 hover:bg-green-100"
-          }`}
-        >
-          Accepted
-        </Toggle>
-
-        <Toggle
-          pressed={activeFilters.includes("rejected")}
-          onPressedChange={() => toggleFilter("rejected")}
-          className={`${
-            activeFilters.includes("rejected")
-              ? "bg-red-600 text-white hover:bg-red-700"
-              : "border border-red-600 text-red-700 hover:bg-red-100"
-          }`}
-        >
-          Rejected
-        </Toggle>
-
-        <Toggle
-          pressed={activeFilters.includes("completed")}
-          onPressedChange={() => toggleFilter("completed")}
-          className={`${
-            activeFilters.includes("completed")
-              ? "bg-gray-600 text-white hover:bg-gray-700"
-              : "border border-gray-600 text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          Completed
-        </Toggle>
+        {(["pending", "accepted", "rejected", "completed"] as SwapStatus[]).map(
+          (s) => (
+            <Toggle
+              key={s}
+              pressed={activeStatuses.includes(s)}
+              onPressedChange={() => toggleStatus(s)}
+              className={`${
+                activeStatuses.includes(s)
+                  ? "bg-primary text-white"
+                  : "border border-muted-foreground text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {s[0].toUpperCase() + s.slice(1)}
+            </Toggle>
+          )
+        )}
       </div>
 
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Your Plant</TableHead>
-                <TableHead>Other User’s Plant</TableHead>
-                <TableHead
-                  onClick={() => handleSort("userId")}
-                  className="cursor-pointer"
-                >
-                  User <ArrowUpDown className="inline w-4 h-4 ml-1" />
-                </TableHead>
-                {/* <TableHead
-                  onClick={() => handleSort("status")}
-                  className="cursor-pointer"
-                >
-                  Status <ArrowUpDown className="inline w-4 h-4 ml-1" />
-                </TableHead> */}
-                <TableHead
-                  onClick={() => handleSort("date")}
-                  className="cursor-pointer"
-                >
-                  Date <ArrowUpDown className="inline w-4 h-4 ml-1" />
-                </TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+      {/* Tabla + paginación (con 2 columnas clicables para ordenar) */}
+      <PaginatedTable
+        data={paginated}
+        columns={[
+          {
+            key: "myPlant",
+            header: "Your Plant",
+            render: (swap: Swap) => {
+              const p = getPlant(swap.myPlantId);
+              return (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={p?.image_url || "/placeholder.jpg"}
+                    alt={p?.nombre_comun}
+                    className="w-10 h-10 rounded-lg object-cover"
+                  />
+                  <span>{p?.nombre_comun}</span>
+                </div>
+              );
+            },
+          },
+          {
+            key: "otherPlant",
+            header: "Other Plant",
+            render: (swap: Swap) => {
+              const p = getPlant(swap.otherPlantId);
+              return (
+                <div className="flex items-center gap-3">
+                  <img
+                    src={p?.image_url || "/placeholder.jpg"}
+                    alt={p?.nombre_comun}
+                    className="w-10 h-10 rounded-lg object-cover"
+                  />
+                  <span>{p?.nombre_comun}</span>
+                </div>
+              );
+            },
+          },
+          {
+            key: "userId",
+            header: (
+              <button
+                type="button"
+                className="flex items-center cursor-pointer"
+                onClick={() => handleSort("userId")}
+              >
+                User <ArrowUpDown className="w-4 h-4 ml-1" />
+              </button>
+            ) as unknown as string, // header permite ReactNode en tu tabla genérica
+            render: (swap: Swap) => {
+              const u = getUser(swap.userId);
+              return (
+                <div className="flex items-center gap-2">
+                  <img
+                    src={u?.avatar_url}
+                    alt={u?.username}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                  <span className="hidden sm:inline">@{u?.username}</span>
+                </div>
+              );
+            },
+          },
+          {
+            key: "date",
+            header: (
+              <button
+                type="button"
+                className="flex items-center cursor-pointer"
+                onClick={() => handleSort("date")}
+              >
+                Date <ArrowUpDown className="w-4 h-4 ml-1" />
+              </button>
+            ) as unknown as string,
+            render: (swap: Swap) => (
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                {formatDate(swap.date)}
+              </span>
+            ),
+          },
+          {
+            key: "actions",
+            header: "Actions",
+            render: (swap: Swap) => (
+              <div className="flex justify-end gap-2">
+                {swap.status === "pending" ? (
+                  <>
+                    <Button size="sm">
+                      <Check />
+                    </Button>
+                    <Button size="sm" variant="destructive">
+                      <X />
+                    </Button>
+                  </>
+                ) : (
+                  <Button size="sm" variant="ghost">
+                    <EyeIcon />
+                  </Button>
+                )}
+              </div>
+            ),
+          },
+        ]}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={goToPage}
+      />
 
-            <TableBody>
-              {sortedSwaps.map((swap) => {
-                const myPlant = getPlantById(swap.myPlantId);
-                const otherPlant = getPlantById(swap.otherPlantId);
-                const user = getUserById(swap.userId);
-
-                return (
-                  <TableRow key={swap.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={myPlant?.image_url || "/placeholder.jpg"}
-                          alt={myPlant?.nombre_comun}
-                          className="w-10 h-10 rounded-lg object-cover"
-                        />
-                        <span>{myPlant?.nombre_comun}</span>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={otherPlant?.image_url || "/placeholder.jpg"}
-                          alt={otherPlant?.nombre_comun}
-                          className="w-10 h-10 rounded-lg object-cover"
-                        />
-                        <span>{otherPlant?.nombre_comun}</span>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={user?.avatar_url}
-                          alt={user?.username}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                        <span className="hidden sm:inline">
-                          @{user?.username}
-                        </span>
-                      </div>
-                    </TableCell>
-
-                    {/* <TableCell>
-                      {swap.status === "pending" && (
-                        <span className="text-yellow-600 font-medium">
-                          <CircleDotDashed className="inline w-4 h-4" />
-                        </span>
-                      )}
-                      {swap.status === "accepted" && (
-                        <span className="text-green-600 font-medium">
-                          <Check className="inline w-4 h-4" />
-                        </span>
-                      )}
-                      {swap.status === "rejected" && (
-                        <span className="text-red-600 font-medium">
-                          <X className="inline w-4 h-4" />
-                        </span>
-                      )}
-                      {swap.status === "completed" && (
-                        <span className="text-gray-500 font-medium">
-                          <CheckCheck className="inline w-4 h-4" />
-                        </span>
-                      )}
-                    </TableCell> */}
-
-                    <TableCell>
-                      <span className="text-xs sm:text-sm text-muted-foreground">
-                        {formatDate(swap.date)}
-                      </span>
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {swap.status === "pending" ? (
-                          <>
-                            <Button size="sm">
-                              <Check />
-                            </Button>
-                            <Button variant="destructive" size="sm">
-                              <X />
-                            </Button>
-                          </>
-                        ) : (
-                          <Button variant="ghost" size="sm">
-                            <EyeIcon />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
+      {/* CTA Propose Swap */}
       <div className="flex justify-end mt-6">
         <Button>
           <Plus />

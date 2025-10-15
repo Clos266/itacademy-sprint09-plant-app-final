@@ -3,11 +3,14 @@ import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { CalendarDays, MapPin, Filter, Search, Plus } from "lucide-react";
+import { CalendarDays, MapPin, Filter, Plus } from "lucide-react";
 import { mockEvents } from "@/data/mockEvents";
 import { mockUsers } from "@/data/mockUsers";
 import { NewEventButton } from "@/components/Events/NewEventModal";
+
+// ✅ nuevos componentes reutilizables
+import { FilterBar } from "@/components/common/FilterBar";
+import { SearchInput } from "@/components/common/SearchInput";
 
 export default function EventsPage() {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
@@ -16,13 +19,14 @@ export default function EventsPage() {
   );
   const [search, setSearch] = useState("");
 
-  // 🔹 Filtering + search
+  // 🔹 Filtrado + búsqueda
   const filteredEvents = mockEvents.filter((event) => {
     const isUpcoming = new Date(event.date) > new Date();
     const matchesSearch =
       event.title.toLowerCase().includes(search.toLowerCase()) ||
       event.description.toLowerCase().includes(search.toLowerCase()) ||
       event.location.toLowerCase().includes(search.toLowerCase());
+
     if (!matchesSearch) return false;
     if (filterType === "upcoming") return isUpcoming;
     if (filterType === "past") return !isUpcoming;
@@ -41,53 +45,50 @@ export default function EventsPage() {
         </PageHeaderHeading>
       </PageHeader>
 
-      {/* 🔍 Search + Filters */}
+      {/* 🔍 Filtros + búsqueda */}
       <Card>
-        <CardContent className="flex flex-col md:flex-row items-center justify-between gap-4 p-4">
-          {/* Search field */}
-          <div className="flex items-center gap-2 w-full md:w-1/2">
-            <Input
-              placeholder="Search events..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <Button variant="outline">
-              <Search className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Filters */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Button
-              variant={filterType === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterType("all")}
-            >
-              All
-            </Button>
-            <Button
-              variant={filterType === "upcoming" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterType("upcoming")}
-            >
-              Upcoming
-            </Button>
-            <Button
-              variant={filterType === "past" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterType("past")}
-            >
-              Past
-            </Button>
-            <Button className="ml-auto">
-              <NewEventButton />
-            </Button>
-          </div>
+        <CardContent>
+          <FilterBar
+            searchComponent={
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                onClear={() => setSearch("")}
+                placeholder="Search events..."
+              />
+            }
+            filters={
+              <>
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Button
+                  variant={filterType === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterType("all")}
+                >
+                  All
+                </Button>
+                <Button
+                  variant={filterType === "upcoming" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterType("upcoming")}
+                >
+                  Upcoming
+                </Button>
+                <Button
+                  variant={filterType === "past" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterType("past")}
+                >
+                  Past
+                </Button>
+                <NewEventButton />
+              </>
+            }
+          />
         </CardContent>
       </Card>
 
-      {/* 📅 Event list */}
+      {/* 📅 Lista de eventos */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredEvents.map((event) => {
           const isUpcoming = new Date(event.date) > new Date();
@@ -102,7 +103,7 @@ export default function EventsPage() {
               }`}
               onClick={() => setSelectedEventId(event.id)}
             >
-              {/* 📸 Imagen dentro del padding */}
+              {/* Imagen */}
               <CardContent className="p-4 pb-0">
                 <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
                   <img
@@ -118,11 +119,11 @@ export default function EventsPage() {
                 </div>
               </CardContent>
 
-              {/* 📝 Contenido principal */}
+              {/* Contenido */}
               <CardHeader className="flex-1 flex flex-col justify-between">
                 <div>
                   <h3 className="text-xl font-bold truncate">{event.title}</h3>
-                  <p className="text-muted-foreground text-sm line-clamp-2 h-[60px] mb-2">
+                  <p className="text-muted-foreground text-sm line-clamp-2 mb-2">
                     {event.description}
                   </p>
 
@@ -150,7 +151,6 @@ export default function EventsPage() {
                   </div>
                 </div>
 
-                {/* 🔹 Botón siempre al fondo */}
                 <div className="mt-4">
                   <Button
                     className="w-full"
