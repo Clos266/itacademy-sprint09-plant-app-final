@@ -4,8 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-// Update the import to match the correct exported type name from mockPlants
-import type { Plant } from "@/data/mockPlants"; // usa el tipo del mock
+import type { Plant } from "@/services/plantCrudService";
 
 interface EditPlantModalProps {
   open: boolean;
@@ -86,14 +85,14 @@ export function EditPlantModal({
             />
           </div>
 
-          <div>
+          {/* <div>
             <Label htmlFor="notas">Notes</Label>
             <Textarea
               id="notas"
               value={formData.notas || ""}
               onChange={(e) => handleChange("notas", e.target.value)}
             />
-          </div>
+          </div> */}
 
           <div className="flex items-center space-x-2">
             <Checkbox

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,8 @@ import {
 } from "@/components/ui/select";
 import { usePagination } from "@/hooks/usePagination";
 import { SearchInput } from "@/components/common/SearchInput";
-
-import { mockPlants as initialMockPlants } from "@/data/mockPlants";
-import type { Plant } from "@/data/mockPlants";
+import type { Plant } from "@/services/plantCrudService";
+import { fetchPlants, updatePlant } from "@/services/plantCrudService";
 import { NewPlantButton } from "@/components/Plants/NewPlantModal";
 import { EditPlantModal } from "@/components/Plants/EditPlantModal";
 import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
@@ -23,8 +22,10 @@ import { Pencil } from "lucide-react";
 
 export default function PlantsPage() {
   // 🌱 State
-  const [plants, setPlants] = useState<Plant[]>(initialMockPlants);
+  const [plants, setPlants] = useState<Plant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [openEdit, setOpenEdit] = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
@@ -35,10 +36,27 @@ export default function PlantsPage() {
   >("all");
   const [category, setCategory] = useState("all");
 
+  // 🌿 Fetch data from Supabase
+  useEffect(() => {
+    const loadPlants = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchPlants();
+        setPlants(data);
+      } catch (err) {
+        console.error("Error al obtener plantas:", err);
+        setError("No se pudieron cargar las plantas.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPlants();
+  }, []);
+
   // 🔍 Filtering
   const filtered = plants.filter((p) => {
     const matchesSearch = p.nombre_comun
-      .toLowerCase()
+      ?.toLowerCase()
       .includes(search.toLowerCase());
     const matchesAvailability =
       filterType === "all"
@@ -67,11 +85,26 @@ export default function PlantsPage() {
     setOpenDetails(true);
   };
 
-  const handleSave = (id: number, updated: Partial<Plant>) => {
-    setPlants((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updated } : p))
-    );
+  // 💾 Save changes to Supabase
+  const handleSave = async (id: number, updated: Partial<Plant>) => {
+    try {
+      const saved = await updatePlant(id, updated);
+      setPlants((prev) => prev.map((p) => (p.id === id ? saved : p)));
+    } catch (err) {
+      console.error("Error al actualizar planta:", err);
+      alert("Hubo un error al actualizar la planta.");
+    }
   };
+
+  // ⏳ Loading / error states
+  if (loading)
+    return (
+      <p className="text-center mt-8 text-muted-foreground">
+        🌿 Cargando plantas...
+      </p>
+    );
+  if (error)
+    return <p className="text-center mt-8 text-destructive">❌ {error}</p>;
 
   return (
     <>
@@ -146,7 +179,7 @@ export default function PlantsPage() {
             header: "Image",
             render: (p) => (
               <img
-                src={p.image_url}
+                src={p.image_url || "/public/imagenotfound.jpeg"}
                 alt={p.nombre_comun}
                 className="w-12 h-12 rounded-lg object-cover shadow-sm cursor-pointer transition-transform hover:scale-105"
                 onClick={() => handleOpenDetails(p)}

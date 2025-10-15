@@ -33,7 +33,7 @@ export function UserDetailsModal({
           {/* 👤 Avatar */}
           <div className="flex justify-center mb-5">
             <img
-              src={user.avatar_url || "/placeholder-avatar.jpg"}
+              src={user.avatar_url || "/public/imagenotfound.jpeg"}
               alt={user.username}
               className="w-24 h-24 rounded-full object-cover border border-border shadow-sm"
             />
@@ -76,7 +76,7 @@ export function UserDetailsModal({
                     className="flex flex-col items-center text-xs text-muted-foreground"
                   >
                     <img
-                      src={p.image_url || "/placeholder-plant.jpg"}
+                      src={p.image_url || "/public/imagenotfound.jpeg"}
                       alt={p.nombre_comun}
                       className="w-14 h-14 rounded-md object-cover border border-border cursor-pointer transition-transform hover:scale-105"
                     />

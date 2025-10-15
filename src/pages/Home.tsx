@@ -115,7 +115,7 @@ export default function PlantsSwapPage() {
               <CardContent className="p-4 pb-0">
                 <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
                   <img
-                    src={plant.image_url || "/placeholder-plant.jpg"}
+                    src={plant.image_url || "/public/imagenotfound.jpeg"}
                     alt={plant.nombre_comun}
                     className="object-cover w-full h-full"
                   />

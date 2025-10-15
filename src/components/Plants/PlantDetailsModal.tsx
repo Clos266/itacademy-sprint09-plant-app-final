@@ -33,7 +33,7 @@ export function PlantDetailsModal({
           {/* 📸 Image */}
           <div className="relative rounded-xl overflow-hidden mb-5">
             <img
-              src={plant.image_url || "/placeholder-plant.jpg"}
+              src={plant.image_url || "/public/imagenotfound.jpeg"}
               alt={plant.nombre_comun}
               className="object-cover w-full h-64 rounded-xl border border-border shadow-sm"
             />

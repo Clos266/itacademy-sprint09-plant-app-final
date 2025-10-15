@@ -1,30 +1,53 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, MapPin, Filter, Plus } from "lucide-react";
-import { mockEvents } from "@/data/mockEvents";
-import { mockUsers } from "@/data/mockUsers";
+import { CalendarDays, MapPin, Filter } from "lucide-react";
 import { NewEventButton } from "@/components/Events/NewEventModal";
 
-// ✅ nuevos componentes reutilizables
 import { FilterBar } from "@/components/common/FilterBar";
 import { SearchInput } from "@/components/common/SearchInput";
+import { fetchEvents } from "@/services/eventService";
+import { fetchUsers } from "@/services/userService";
+import type { EventItem } from "@/services/eventService";
+import type { UserProfile } from "@/services/userService";
 
 export default function EventsPage() {
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [filterType, setFilterType] = useState<"all" | "upcoming" | "past">(
     "all"
   );
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // 🔹 Filtrado + búsqueda
-  const filteredEvents = mockEvents.filter((event) => {
+  // 🔹 Cargar eventos y usuarios desde Supabase
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [eventData, userData] = await Promise.all([
+          fetchEvents(),
+          fetchUsers(),
+        ]);
+        setEvents(eventData);
+        setUsers(userData);
+      } catch (err) {
+        console.error("Error al cargar eventos o usuarios:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  // 🔍 Filtrado + búsqueda
+  const filteredEvents = events.filter((event) => {
     const isUpcoming = new Date(event.date) > new Date();
     const matchesSearch =
       event.title.toLowerCase().includes(search.toLowerCase()) ||
-      event.description.toLowerCase().includes(search.toLowerCase()) ||
+      event.description?.toLowerCase().includes(search.toLowerCase()) ||
       event.location.toLowerCase().includes(search.toLowerCase());
 
     if (!matchesSearch) return false;
@@ -33,8 +56,13 @@ export default function EventsPage() {
     return true;
   });
 
-  const selectedEvent =
-    filteredEvents.find((e) => e.id === selectedEventId) || null;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <p className="text-muted-foreground">🌿 Cargando eventos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen space-y-6">
@@ -93,7 +121,7 @@ export default function EventsPage() {
         {filteredEvents.map((event) => {
           const isUpcoming = new Date(event.date) > new Date();
           const isSelected = selectedEventId === event.id;
-          const organizer = mockUsers.find((u) => u.id === event.user_id);
+          const organizer = users.find((u) => u.id === event.user_id);
 
           return (
             <Card
@@ -107,7 +135,7 @@ export default function EventsPage() {
               <CardContent className="p-4 pb-0">
                 <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
                   <img
-                    src={event.image_url || "/placeholder-event.jpg"}
+                    src={event.image_url || "/public/imagenotfound.jpeg"}
                     alt={event.title}
                     className="object-cover w-full h-full"
                   />
@@ -135,7 +163,9 @@ export default function EventsPage() {
                   {organizer && (
                     <div className="flex items-center gap-2 text-sm mb-1">
                       <img
-                        src={organizer.avatar_url}
+                        src={
+                          organizer.avatar_url || "/public/imagenotfound.jpeg"
+                        }
                         alt={organizer.username}
                         className="w-6 h-6 rounded-full object-cover"
                       />

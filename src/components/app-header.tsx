@@ -15,7 +15,6 @@ import { AppSidebar } from "./app-sidebar";
 import { Button, buttonVariants } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { appConfig, baseUrl } from "@/config/app";
-import GitHub from "./icons/github";
 
 export function AppHeader() {
   const location = useLocation();

@@ -132,7 +132,7 @@ export default function SwapsPage() {
               return (
                 <div className="flex items-center gap-3">
                   <img
-                    src={p?.image_url || "/placeholder.jpg"}
+                    src={p?.image_url || "/public/imagenotfound.jpeg"}
                     alt={p?.nombre_comun}
                     className="w-10 h-10 rounded-lg object-cover cursor-pointer transition-transform hover:scale-105"
                     onClick={() => setSelectedPlant(swap.myPlantId)}
@@ -150,7 +150,7 @@ export default function SwapsPage() {
               return (
                 <div className="flex items-center gap-3">
                   <img
-                    src={p?.image_url || "/placeholder.jpg"}
+                    src={p?.image_url || "/public/imagenotfound.jpeg"}
                     alt={p?.nombre_comun}
                     className="w-10 h-10 rounded-lg object-cover cursor-pointer transition-transform hover:scale-105"
                     onClick={() => setSelectedPlant(swap.otherPlantId)}

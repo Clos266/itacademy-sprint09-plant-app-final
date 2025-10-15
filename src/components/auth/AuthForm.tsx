@@ -21,7 +21,7 @@ import {
   FormControl,
 } from "@/components/ui/form";
 
-// ✅ Validation schema with Zod
+// ✅ Validation schema
 const authSchema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(6, "Password must be at least 6 characters long"),
@@ -35,10 +35,12 @@ interface AuthFormProps {
 
 export function AuthForm({ mode }: AuthFormProps) {
   const navigate = useNavigate();
+
   const form = useForm<AuthFormData>({
     resolver: zodResolver(authSchema),
     defaultValues: { email: "", password: "" },
   });
+
   const {
     handleSubmit,
     control,
@@ -53,22 +55,34 @@ export function AuthForm({ mode }: AuthFormProps) {
           password: data.password,
         });
         if (error) throw error;
+
+        // Pequeña pausa para que la sesión se guarde antes de navegar
+        await new Promise((r) => setTimeout(r, 400));
+        navigate("/");
       } else {
         const { error } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
         });
         if (error) throw error;
+        alert("✅ Account created! Check your email to confirm your account.");
+        navigate("/login");
       }
-      navigate("/");
     } catch (err: any) {
-      form.setError("password", { message: err.message });
+      console.error("Auth error:", err);
+      form.setError("password", {
+        message:
+          err?.message ||
+          (mode === "login"
+            ? "Invalid credentials"
+            : "Could not create account"),
+      });
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm shadow-md">
         <CardHeader>
           <CardTitle className="text-2xl font-semibold text-center">
             {mode === "login" ? "Sign In" : "Create Account"}
@@ -96,6 +110,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={control}
                 name="password"
@@ -142,8 +157,9 @@ export function AuthForm({ mode }: AuthFormProps) {
             )}
           </p>
         </CardContent>
-        {/* Social login buttons */}
-        <div className="flex flex-col gap-2 mt-2 px-6">
+
+        {/* 🌐 OAuth Providers */}
+        <div className="flex flex-col gap-2 mt-2 px-6 pb-4">
           <Button
             variant="outline"
             type="button"
