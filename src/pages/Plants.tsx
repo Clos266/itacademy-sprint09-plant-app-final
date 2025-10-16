@@ -20,20 +20,15 @@ import { EditPlantModal } from "@/components/Plants/EditPlantModal";
 import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
 
 import type { Database } from "@/types/supabase";
-import {
-  fetchPlants,
-  updatePlant,
-  deletePlant,
-} from "@/services/plantCrudService";
+import { fetchPlantsByUser, updatePlant } from "@/services/plantCrudService";
+import { supabase } from "@/services/supabaseClient";
 
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
 
-export default function PlantsPage() {
+export default function MyPlantsPage() {
   // 🌱 State
   const [plants, setPlants] = useState<Plant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const [openEdit, setOpenEdit] = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
@@ -42,67 +37,84 @@ export default function PlantsPage() {
   const [filterType, setFilterType] = useState<
     "all" | "available" | "unavailable"
   >("all");
+  const [category, setCategory] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 🔄 Fetch de plantas desde Supabase
+  // 🔄 Cargar solo las plantas del usuario actual
   useEffect(() => {
-    const loadPlants = async () => {
+    const loadMyPlants = async () => {
       try {
         setLoading(true);
-        const data = await fetchPlants(true);
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) throw userError;
+        if (!user) throw new Error("No hay sesión activa");
+
+        const data = await fetchPlantsByUser(user.id);
         setPlants(data);
       } catch (err) {
-        console.error("Error al cargar plantas:", err);
-        setError("No se pudieron cargar las plantas.");
+        console.error("Error al cargar mis plantas:", err);
+        setError("No se pudieron cargar tus plantas.");
       } finally {
         setLoading(false);
       }
     };
-    loadPlants();
+
+    loadMyPlants();
   }, []);
 
-  // 🔍 Filtros y búsqueda
-  const filteredPlants = plants.filter((p) => {
-    const matchesSearch =
-      p.nombre_comun?.toLowerCase().includes(search.toLowerCase()) ||
-      p.nombre_cientifico?.toLowerCase().includes(search.toLowerCase()) ||
-      p.especie?.toLowerCase().includes(search.toLowerCase());
-    if (!matchesSearch) return false;
-    if (filterType === "available") return p.disponible;
-    if (filterType === "unavailable") return !p.disponible;
-    return true;
+  // 🔍 Filtrado local
+  const filtered = plants.filter((p) => {
+    const matchesSearch = p.nombre_comun
+      ?.toLowerCase()
+      .includes(search.toLowerCase());
+    const matchesAvailability =
+      filterType === "all"
+        ? true
+        : filterType === "available"
+        ? p.disponible
+        : !p.disponible;
+    const matchesCategory =
+      category === "all" ||
+      p.especie?.toLowerCase().includes(category.toLowerCase());
+    return matchesSearch && matchesAvailability && matchesCategory;
   });
 
-  const { page, totalPages, paginated, goToPage } = usePagination(
-    filteredPlants,
-    5
-  );
+  // 🔹 Paginación
+  const { page, totalPages, paginated, goToPage } = usePagination(filtered, 5);
 
-  // 🔧 Helpers
-  const handleDelete = async (id: number) => {
-    if (!confirm("¿Seguro que quieres eliminar esta planta?")) return;
-    try {
-      await deletePlant(id);
-      setPlants((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      console.error("Error al eliminar planta:", err);
-      alert("Error al eliminar la planta.");
-    }
+  // ✏️ Edit handlers
+  const handleEdit = (plant: Plant) => {
+    setSelectedPlant(plant);
+    setOpenEdit(true);
   };
 
-  const handleUpdate = async (id: number, updates: Partial<Plant>) => {
+  // 👁️ Details modal handler
+  const handleOpenDetails = (plant: Plant) => {
+    setSelectedPlant(plant);
+    setOpenDetails(true);
+  };
+
+  // 💾 Guardar cambios en Supabase
+  const handleSave = async (id: number, updated: Partial<Plant>) => {
     try {
-      const updated = await updatePlant(id, updates);
-      setPlants((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      const newPlant = await updatePlant(id, updated);
+      setPlants((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, ...newPlant } : p))
+      );
     } catch (err) {
       console.error("Error al actualizar planta:", err);
     }
   };
 
-  // 🔄 UI
   if (loading)
     return (
       <div className="flex justify-center items-center h-[60vh] text-muted-foreground">
-        Cargando plantas...
+        Cargando tus plantas...
       </div>
     );
 
@@ -110,14 +122,13 @@ export default function PlantsPage() {
     return <div className="text-center mt-8 text-destructive">{error}</div>;
 
   return (
-    <div className="space-y-6">
-      {/* 🌿 Encabezado */}
+    <>
+      {/* 🌿 Header */}
       <PageHeader>
-        <PageHeaderHeading>🌱 Mis Plantas</PageHeaderHeading>
+        <PageHeaderHeading>🌿 My Plants</PageHeaderHeading>
       </PageHeader>
 
-      {/* 🔍 Barra de búsqueda y filtros */}
-      <Card>
+      <Card className="mt-4">
         <CardContent>
           <FilterBar
             searchComponent={
@@ -125,89 +136,88 @@ export default function PlantsPage() {
                 value={search}
                 onChange={setSearch}
                 onClear={() => setSearch("")}
-                placeholder="Buscar por nombre o especie..."
+                placeholder="Search your plants..."
               />
             }
             filters={
               <>
-                <Select
-                  value={filterType}
-                  onValueChange={(v: "all" | "available" | "unavailable") =>
-                    setFilterType(v)
-                  }
+                {/* Filter by availability */}
+                <Button
+                  variant={filterType === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterType("all")}
                 >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filtrar por disponibilidad" />
+                  All
+                </Button>
+                <Button
+                  variant={filterType === "available" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterType("available")}
+                >
+                  Available
+                </Button>
+                <Button
+                  variant={filterType === "unavailable" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterType("unavailable")}
+                >
+                  Unavailable
+                </Button>
+
+                {/* Category select */}
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    <SelectItem value="available">Disponibles</SelectItem>
-                    <SelectItem value="unavailable">No disponibles</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="suculentas">Succulents</SelectItem>
+                    <SelectItem value="cactus">Cactus</SelectItem>
+                    <SelectItem value="interior">Indoor</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="outline" onClick={() => setSearch("")}>
-                  Limpiar
-                </Button>
+
+                {/* ➕ New plant button */}
+                <NewPlantButton />
               </>
             }
           />
         </CardContent>
       </Card>
 
-      {/* 🪴 Tabla de plantas */}
+      {/* 📋 Plants Table */}
       <PaginatedTable
         data={paginated}
         columns={[
           {
-            key: "nombre_comun",
-            header: "Nombre común",
+            key: "image",
+            header: "Image",
             render: (p: Plant) => (
-              <div
-                onClick={() => {
-                  setSelectedPlant(p);
-                  setOpenDetails(true);
-                }}
-                className="cursor-pointer hover:text-primary"
-              >
-                {p.nombre_comun}
-              </div>
+              <img
+                src={p.image_url || "/public/imagenotfound.jpeg"}
+                alt={p.nombre_comun}
+                className="w-12 h-12 rounded-lg object-cover shadow-sm cursor-pointer transition-transform hover:scale-105"
+                onClick={() => handleOpenDetails(p)}
+              />
             ),
           },
           {
-            key: "nombre_cientifico",
-            header: "Nombre científico",
-            render: (p: Plant) => <em>{p.nombre_cientifico || "—"}</em>,
+            key: "nombre_comun",
+            header: "Common Name",
+            render: (p: Plant) => <span>{p.nombre_comun}</span>,
           },
           {
-            key: "disponible",
-            header: "Estado",
-            render: (p: Plant) =>
-              p.disponible ? "Disponible" : "No disponible",
+            key: "nombre_cientifico",
+            header: "Scientific Name",
+            render: (p: Plant) => p.nombre_cientifico || "—",
           },
           {
             key: "actions",
-            header: "Acciones",
+            header: "Edit",
             render: (p: Plant) => (
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedPlant(p);
-                    setOpenEdit(true);
-                  }}
-                >
-                  <Pencil className="w-4 h-4 mr-1" />
-                  Editar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handleDelete(p.id)}
-                >
-                  Eliminar
-                </Button>
-              </div>
+              <Button size="sm" variant="outline" onClick={() => handleEdit(p)}>
+                <Pencil className="w-4 h-4" />
+              </Button>
             ),
           },
         ]}
@@ -216,25 +226,20 @@ export default function PlantsPage() {
         onPageChange={goToPage}
       />
 
-      {/* ➕ Botón para nueva planta */}
-      <div className="flex justify-end mt-4">
-        <NewPlantButton />
-      </div>
+      {/* 👁️ Details Modal */}
+      <PlantDetailsModal
+        open={openDetails}
+        onOpenChange={setOpenDetails}
+        plantId={selectedPlant?.id || null}
+      />
 
-      {/* ✏️ Modal de edición */}
+      {/* ✏️ Edit Modal */}
       <EditPlantModal
         open={openEdit}
         onOpenChange={setOpenEdit}
         plant={selectedPlant}
-        onUpdate={handleUpdate}
+        onSave={handleSave}
       />
-
-      {/* 🔍 Modal de detalles */}
-      <PlantDetailsModal
-        open={openDetails}
-        onOpenChange={setOpenDetails}
-        plant={selectedPlant}
-      />
-    </div>
+    </>
   );
 }
