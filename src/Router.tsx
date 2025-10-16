@@ -16,10 +16,11 @@ export default function Router() {
         <Route path="events" element={<Events />} />
         <Route path="swaps" element={<SwapsPage />} />
         <Route path="plants" element={<PlantsPage />} />
-        <Route path="pages">
-          <Route path="login" element={<Login />} />
-          <Route path="signup" element={<SignupPage />} />
-        </Route>
+
+        <Route path="pages"></Route>
+        <Route path="login" element={<Login />} />
+        <Route path="signup" element={<SignupPage />} />
+
         <Route path="*" element={<NotMatch />} />
       </Route>
     </Routes>
