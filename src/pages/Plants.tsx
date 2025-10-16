@@ -1,230 +1,190 @@
-import { useEffect, useState } from "react";
-import { PageHeader, PageHeaderHeading } from "@/components/page-header";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FilterBar } from "@/components/common/FilterBar";
-import { PaginatedTable } from "@/components/common/PaginatedTable";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { usePagination } from "@/hooks/usePagination";
-import { SearchInput } from "@/components/common/SearchInput";
-import type { Plant } from "@/services/plantCrudService";
-import { fetchPlants, updatePlant } from "@/services/plantCrudService";
-import { NewPlantButton } from "@/components/Plants/NewPlantModal";
-import { EditPlantModal } from "@/components/Plants/EditPlantModal";
-import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
-import { Pencil } from "lucide-react";
+import { supabase } from "../services/supabaseClient";
+import type { Database } from "@/types/supabase";
 
-export default function PlantsPage() {
-  // 🌱 State
-  const [plants, setPlants] = useState<Plant[]>([]);
-  const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+type Plant = Database["public"]["Tables"]["plants"]["Row"];
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type PlantInsert = Omit<Plant, "id" | "created_at">;
+type PlantUpdate = Partial<Plant>;
 
-  const [openEdit, setOpenEdit] = useState(false);
-  const [openDetails, setOpenDetails] = useState(false);
+const TABLE = "plants" as const;
+export type PlantWithProfile = Plant & { profile?: Profile | null };
 
-  const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState<
-    "all" | "available" | "unavailable"
-  >("all");
-  const [category, setCategory] = useState("all");
+/** 🔹 Obtener usuario autenticado actual */
+async function getCurrentUserId(): Promise<string | null> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error) {
+    console.error("Error al obtener usuario actual:", error.message);
+    return null;
+  }
+  return user?.id ?? null;
+}
 
-  // 🌿 Fetch data from Supabase
-  useEffect(() => {
-    const loadPlants = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchPlants();
-        setPlants(data);
-      } catch (err) {
-        console.error("Error al obtener plantas:", err);
-        setError("No se pudieron cargar las plantas.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadPlants();
-  }, []);
+// 🌿 Obtener plantas (solo las del usuario autenticado)
+export async function fetchPlants(
+  withOwner = false
+): Promise<PlantWithProfile[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    console.warn("⚠️ No hay usuario autenticado, no se cargan plantas");
+    return [];
+  }
 
-  // 🔍 Filtering
-  const filtered = plants.filter((p) => {
-    const matchesSearch = p.nombre_comun
-      ?.toLowerCase()
-      .includes(search.toLowerCase());
-    const matchesAvailability =
-      filterType === "all"
-        ? true
-        : filterType === "available"
-        ? p.disponible
-        : !p.disponible;
-    const matchesCategory =
-      category === "all" ||
-      p.especie?.toLowerCase().includes(category.toLowerCase());
-    return matchesSearch && matchesAvailability && matchesCategory;
-  });
+  let data: any[] | null = null;
+  let error: any = null;
 
-  // 🔹 Pagination
-  const { page, totalPages, paginated, goToPage } = usePagination(filtered, 5);
+  if (withOwner) {
+    const res = await supabase
+      .from(TABLE)
+      .select("*, profiles(*)")
+      .eq("user_id", userId) // 🔸 solo las plantas del usuario actual
+      .order("created_at", { ascending: false });
+    data = res.data;
+    error = res.error;
+  } else {
+    const res = await supabase
+      .from(TABLE)
+      .select("*")
+      .eq("user_id", userId) // 🔸 filtrado igual
+      .order("created_at", { ascending: false });
+    data = res.data;
+    error = res.error;
+  }
 
-  // ✏️ Edit handlers
-  const handleEdit = (plant: Plant) => {
-    setSelectedPlant(plant);
-    setOpenEdit(true);
-  };
+  if (error) throw new Error(error.message);
+  if (!data) return [];
 
-  // 👁️ Details modal handler
-  const handleOpenDetails = (plant: Plant) => {
-    setSelectedPlant(plant);
-    setOpenDetails(true);
-  };
+  if (withOwner) {
+    return data.map((p: any) => ({
+      ...p,
+      profile: p.profiles ?? null,
+    }));
+  }
 
-  // 💾 Save changes to Supabase
-  const handleSave = async (id: number, updated: Partial<Plant>) => {
-    try {
-      const saved = await updatePlant(id, updated);
-      setPlants((prev) => prev.map((p) => (p.id === id ? saved : p)));
-    } catch (err) {
-      console.error("Error al actualizar planta:", err);
-      alert("Hubo un error al actualizar la planta.");
-    }
-  };
+  return data;
+}
 
-  // ⏳ Loading / error states
-  if (loading)
-    return (
-      <p className="text-center mt-8 text-muted-foreground">
-        🌿 Cargando plantas...
-      </p>
+// 🌱 Obtener plantas por ID de usuario (para administración, no solo el actual)
+export async function fetchPlantsByUser(userId: string): Promise<Plant[]> {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+// 🔍 Buscar plantas (propias)
+export async function searchMyPlants(
+  term: string,
+  onlyAvailable = false
+): Promise<Plant[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  let query = supabase
+    .from(TABLE)
+    .select("*")
+    .eq("user_id", userId)
+    .or(
+      `nombre_comun.ilike.%${term}%,nombre_cientifico.ilike.%${term}%,especie.ilike.%${term}%`
     );
-  if (error)
-    return <p className="text-center mt-8 text-destructive">❌ {error}</p>;
 
-  return (
-    <>
-      {/* 🌿 Header */}
-      <PageHeader>
-        <PageHeaderHeading>🌿 My Plants</PageHeaderHeading>
-      </PageHeader>
+  if (onlyAvailable) query = query.eq("disponible", true);
 
-      <Card className="mt-4">
-        <CardContent>
-          <FilterBar
-            searchComponent={
-              <SearchInput
-                value={search}
-                onChange={setSearch}
-                onClear={() => setSearch("")}
-                placeholder="Search plants..."
-              />
-            }
-            filters={
-              <>
-                {/* Filter by availability */}
-                <Button
-                  variant={filterType === "all" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("all")}
-                >
-                  All
-                </Button>
-                <Button
-                  variant={filterType === "available" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("available")}
-                >
-                  Available
-                </Button>
-                <Button
-                  variant={filterType === "unavailable" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("unavailable")}
-                >
-                  Unavailable
-                </Button>
+  const { data, error } = await query.order("created_at", { ascending: false });
 
-                {/* Category select */}
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="suculentas">Succulents</SelectItem>
-                    <SelectItem value="cactus">Cactus</SelectItem>
-                    <SelectItem value="interior">Indoor</SelectItem>
-                  </SelectContent>
-                </Select>
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
 
-                {/* ➕ New plant button */}
-                <NewPlantButton />
-              </>
-            }
-          />
-        </CardContent>
-      </Card>
+// ➕ Agregar planta (se asigna automáticamente el user_id del usuario actual)
+export async function addPlant(plant: PlantInsert): Promise<Plant> {
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Usuario no autenticado.");
 
-      {/* 📋 Plants Table */}
-      <PaginatedTable
-        data={paginated}
-        columns={[
-          {
-            key: "image",
-            header: "Image",
-            render: (p) => (
-              <img
-                src={p.image_url || "/public/imagenotfound.jpeg"}
-                alt={p.nombre_comun}
-                className="w-12 h-12 rounded-lg object-cover shadow-sm cursor-pointer transition-transform hover:scale-105"
-                onClick={() => handleOpenDetails(p)}
-              />
-            ),
-          },
-          {
-            key: "nombre_comun",
-            header: "Common Name",
-            render: (p) => <span>{p.nombre_comun}</span>,
-          },
-          {
-            key: "nombre_cientifico",
-            header: "Scientific Name",
-            render: (p) => p.nombre_cientifico || "—",
-          },
-          {
-            key: "actions",
-            header: "Edit",
-            render: (p) => (
-              <Button size="sm" variant="outline" onClick={() => handleEdit(p)}>
-                <Pencil className="w-4 h-4" />
-              </Button>
-            ),
-          },
-        ]}
-        page={page}
-        totalPages={totalPages}
-        onPageChange={goToPage}
-      />
+  const { data, error } = await supabase
+    .from(TABLE)
+    .insert({ ...plant, user_id: userId })
+    .select()
+    .single();
 
-      {/* 👁️ Details Modal */}
-      <PlantDetailsModal
-        open={openDetails}
-        onOpenChange={setOpenDetails}
-        plant={selectedPlant}
-      />
+  if (error) throw new Error(error.message);
+  return data;
+}
 
-      {/* ✏️ Edit Modal */}
-      <EditPlantModal
-        open={openEdit}
-        onOpenChange={setOpenEdit}
-        plant={selectedPlant}
-        onSave={handleSave}
-      />
-    </>
-  );
+// ✏️ Actualizar planta
+export async function updatePlant(
+  id: number,
+  updates: PlantUpdate
+): Promise<Plant> {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ❌ Borrar planta
+export async function deletePlant(id: number): Promise<void> {
+  const { error } = await supabase.from(TABLE).delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+// 🌾 Obtener una planta por ID (con propietario)
+export async function getPlantById(
+  id: number,
+  withOwner = false
+): Promise<PlantWithProfile | null> {
+  let data: any = null;
+  let error: any = null;
+
+  if (withOwner) {
+    const res = await supabase
+      .from(TABLE)
+      .select("*, profiles(*)")
+      .eq("id", id)
+      .single();
+    data = res.data;
+    error = res.error;
+  } else {
+    const res = await supabase.from(TABLE).select("*").eq("id", id).single();
+    data = res.data;
+    error = res.error;
+  }
+
+  if (error) {
+    console.error("Error al obtener planta:", error.message);
+    return null;
+  }
+
+  if (withOwner && data) {
+    return { ...data, profile: data.profiles ?? null };
+  }
+
+  return data;
+}
+
+// 🌸 Obtener plantas disponibles del usuario autenticado
+export async function fetchAvailablePlants(): Promise<Plant[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select("*")
+    .eq("user_id", userId)
+    .eq("disponible", true)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }

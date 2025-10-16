@@ -12,9 +12,9 @@ import {
 import { ChevronDown } from "lucide-react";
 import { AppLogo } from "./app-logo";
 import { AppSidebar } from "./app-sidebar";
-import { Button, buttonVariants } from "./ui/button";
+import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { appConfig, baseUrl } from "@/config/app";
+import { baseUrl } from "@/config/app";
 
 export function AppHeader() {
   const location = useLocation();

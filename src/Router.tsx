@@ -4,7 +4,7 @@ import NotMatch from "./pages/NotMatch";
 import Events from "./pages/Events";
 import Login from "./pages/Login";
 import SignupPage from "./pages/Signup";
-import PlantsPage from "./pages/Plants";
+import PlantPage from "./pages/Plants";
 import HomePage from "./pages/Home";
 import SwapsPage from "./pages/Swaps";
 
