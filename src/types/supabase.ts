@@ -45,6 +45,7 @@ export interface Event {
   location: string;
   swap_point_id: number | null;
   image_url: string | null;
+  description?: string | null;
 }
 
 export interface Swap {

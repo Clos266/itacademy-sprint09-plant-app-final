@@ -10,12 +10,12 @@ import { FilterBar } from "@/components/common/FilterBar";
 import { SearchInput } from "@/components/common/SearchInput";
 import { fetchEvents } from "@/services/eventService";
 import { fetchUsers } from "@/services/userService";
-import type { EventItem } from "@/services/eventService";
-import type { UserProfile } from "@/services/userService";
+import type { Event } from "@/types/supabase";
+import type { Profile } from "@/types/supabase";
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<EventItem[]>([]);
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [users, setUsers] = useState<Profile[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [filterType, setFilterType] = useState<"all" | "upcoming" | "past">(
     "all"
@@ -166,7 +166,7 @@ export default function EventsPage() {
                         src={
                           organizer.avatar_url || "/public/imagenotfound.jpeg"
                         }
-                        alt={organizer.username}
+                        alt={organizer.username ?? ""}
                         className="w-6 h-6 rounded-full object-cover"
                       />
                       <span className="text-muted-foreground">
