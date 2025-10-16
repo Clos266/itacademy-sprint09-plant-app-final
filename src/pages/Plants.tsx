@@ -1,190 +1,240 @@
-import { supabase } from "../services/supabaseClient";
+import { useEffect, useState } from "react";
+import { PageHeader, PageHeaderHeading } from "@/components/page-header";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { FilterBar } from "@/components/common/FilterBar";
+import { PaginatedTable } from "@/components/common/PaginatedTable";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { usePagination } from "@/hooks/usePagination";
+import { SearchInput } from "@/components/common/SearchInput";
+import { Pencil } from "lucide-react";
+
+import { NewPlantButton } from "@/components/Plants/NewPlantModal";
+import { EditPlantModal } from "@/components/Plants/EditPlantModal";
+import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
+
 import type { Database } from "@/types/supabase";
+import {
+  fetchPlants,
+  updatePlant,
+  deletePlant,
+} from "@/services/plantCrudService";
 
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-type PlantInsert = Omit<Plant, "id" | "created_at">;
-type PlantUpdate = Partial<Plant>;
 
-const TABLE = "plants" as const;
-export type PlantWithProfile = Plant & { profile?: Profile | null };
+export default function PlantsPage() {
+  // 🌱 State
+  const [plants, setPlants] = useState<Plant[]>([]);
+  const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-/** 🔹 Obtener usuario autenticado actual */
-async function getCurrentUserId(): Promise<string | null> {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  if (error) {
-    console.error("Error al obtener usuario actual:", error.message);
-    return null;
-  }
-  return user?.id ?? null;
-}
+  const [openEdit, setOpenEdit] = useState(false);
+  const [openDetails, setOpenDetails] = useState(false);
 
-// 🌿 Obtener plantas (solo las del usuario autenticado)
-export async function fetchPlants(
-  withOwner = false
-): Promise<PlantWithProfile[]> {
-  const userId = await getCurrentUserId();
-  if (!userId) {
-    console.warn("⚠️ No hay usuario autenticado, no se cargan plantas");
-    return [];
-  }
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState<
+    "all" | "available" | "unavailable"
+  >("all");
 
-  let data: any[] | null = null;
-  let error: any = null;
+  // 🔄 Fetch de plantas desde Supabase
+  useEffect(() => {
+    const loadPlants = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchPlants(true);
+        setPlants(data);
+      } catch (err) {
+        console.error("Error al cargar plantas:", err);
+        setError("No se pudieron cargar las plantas.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPlants();
+  }, []);
 
-  if (withOwner) {
-    const res = await supabase
-      .from(TABLE)
-      .select("*, profiles(*)")
-      .eq("user_id", userId) // 🔸 solo las plantas del usuario actual
-      .order("created_at", { ascending: false });
-    data = res.data;
-    error = res.error;
-  } else {
-    const res = await supabase
-      .from(TABLE)
-      .select("*")
-      .eq("user_id", userId) // 🔸 filtrado igual
-      .order("created_at", { ascending: false });
-    data = res.data;
-    error = res.error;
-  }
+  // 🔍 Filtros y búsqueda
+  const filteredPlants = plants.filter((p) => {
+    const matchesSearch =
+      p.nombre_comun?.toLowerCase().includes(search.toLowerCase()) ||
+      p.nombre_cientifico?.toLowerCase().includes(search.toLowerCase()) ||
+      p.especie?.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    if (filterType === "available") return p.disponible;
+    if (filterType === "unavailable") return !p.disponible;
+    return true;
+  });
 
-  if (error) throw new Error(error.message);
-  if (!data) return [];
+  const { page, totalPages, paginated, goToPage } = usePagination(
+    filteredPlants,
+    5
+  );
 
-  if (withOwner) {
-    return data.map((p: any) => ({
-      ...p,
-      profile: p.profiles ?? null,
-    }));
-  }
+  // 🔧 Helpers
+  const handleDelete = async (id: number) => {
+    if (!confirm("¿Seguro que quieres eliminar esta planta?")) return;
+    try {
+      await deletePlant(id);
+      setPlants((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error("Error al eliminar planta:", err);
+      alert("Error al eliminar la planta.");
+    }
+  };
 
-  return data;
-}
+  const handleUpdate = async (id: number, updates: Partial<Plant>) => {
+    try {
+      const updated = await updatePlant(id, updates);
+      setPlants((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    } catch (err) {
+      console.error("Error al actualizar planta:", err);
+    }
+  };
 
-// 🌱 Obtener plantas por ID de usuario (para administración, no solo el actual)
-export async function fetchPlantsByUser(userId: string): Promise<Plant[]> {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data ?? [];
-}
-
-// 🔍 Buscar plantas (propias)
-export async function searchMyPlants(
-  term: string,
-  onlyAvailable = false
-): Promise<Plant[]> {
-  const userId = await getCurrentUserId();
-  if (!userId) return [];
-
-  let query = supabase
-    .from(TABLE)
-    .select("*")
-    .eq("user_id", userId)
-    .or(
-      `nombre_comun.ilike.%${term}%,nombre_cientifico.ilike.%${term}%,especie.ilike.%${term}%`
+  // 🔄 UI
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-[60vh] text-muted-foreground">
+        Cargando plantas...
+      </div>
     );
 
-  if (onlyAvailable) query = query.eq("disponible", true);
+  if (error)
+    return <div className="text-center mt-8 text-destructive">{error}</div>;
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  return (
+    <div className="space-y-6">
+      {/* 🌿 Encabezado */}
+      <PageHeader>
+        <PageHeaderHeading>🌱 Mis Plantas</PageHeaderHeading>
+      </PageHeader>
 
-  if (error) throw new Error(error.message);
-  return data ?? [];
-}
+      {/* 🔍 Barra de búsqueda y filtros */}
+      <Card>
+        <CardContent>
+          <FilterBar
+            searchComponent={
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                onClear={() => setSearch("")}
+                placeholder="Buscar por nombre o especie..."
+              />
+            }
+            filters={
+              <>
+                <Select
+                  value={filterType}
+                  onValueChange={(v: "all" | "available" | "unavailable") =>
+                    setFilterType(v)
+                  }
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrar por disponibilidad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="available">Disponibles</SelectItem>
+                    <SelectItem value="unavailable">No disponibles</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={() => setSearch("")}>
+                  Limpiar
+                </Button>
+              </>
+            }
+          />
+        </CardContent>
+      </Card>
 
-// ➕ Agregar planta (se asigna automáticamente el user_id del usuario actual)
-export async function addPlant(plant: PlantInsert): Promise<Plant> {
-  const userId = await getCurrentUserId();
-  if (!userId) throw new Error("Usuario no autenticado.");
+      {/* 🪴 Tabla de plantas */}
+      <PaginatedTable
+        data={paginated}
+        columns={[
+          {
+            key: "nombre_comun",
+            header: "Nombre común",
+            render: (p: Plant) => (
+              <div
+                onClick={() => {
+                  setSelectedPlant(p);
+                  setOpenDetails(true);
+                }}
+                className="cursor-pointer hover:text-primary"
+              >
+                {p.nombre_comun}
+              </div>
+            ),
+          },
+          {
+            key: "nombre_cientifico",
+            header: "Nombre científico",
+            render: (p: Plant) => <em>{p.nombre_cientifico || "—"}</em>,
+          },
+          {
+            key: "disponible",
+            header: "Estado",
+            render: (p: Plant) =>
+              p.disponible ? "Disponible" : "No disponible",
+          },
+          {
+            key: "actions",
+            header: "Acciones",
+            render: (p: Plant) => (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedPlant(p);
+                    setOpenEdit(true);
+                  }}
+                >
+                  <Pencil className="w-4 h-4 mr-1" />
+                  Editar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => handleDelete(p.id)}
+                >
+                  Eliminar
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={goToPage}
+      />
 
-  const { data, error } = await supabase
-    .from(TABLE)
-    .insert({ ...plant, user_id: userId })
-    .select()
-    .single();
+      {/* ➕ Botón para nueva planta */}
+      <div className="flex justify-end mt-4">
+        <NewPlantButton />
+      </div>
 
-  if (error) throw new Error(error.message);
-  return data;
-}
+      {/* ✏️ Modal de edición */}
+      <EditPlantModal
+        open={openEdit}
+        onOpenChange={setOpenEdit}
+        plant={selectedPlant}
+        onUpdate={handleUpdate}
+      />
 
-// ✏️ Actualizar planta
-export async function updatePlant(
-  id: number,
-  updates: PlantUpdate
-): Promise<Plant> {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-// ❌ Borrar planta
-export async function deletePlant(id: number): Promise<void> {
-  const { error } = await supabase.from(TABLE).delete().eq("id", id);
-  if (error) throw new Error(error.message);
-}
-
-// 🌾 Obtener una planta por ID (con propietario)
-export async function getPlantById(
-  id: number,
-  withOwner = false
-): Promise<PlantWithProfile | null> {
-  let data: any = null;
-  let error: any = null;
-
-  if (withOwner) {
-    const res = await supabase
-      .from(TABLE)
-      .select("*, profiles(*)")
-      .eq("id", id)
-      .single();
-    data = res.data;
-    error = res.error;
-  } else {
-    const res = await supabase.from(TABLE).select("*").eq("id", id).single();
-    data = res.data;
-    error = res.error;
-  }
-
-  if (error) {
-    console.error("Error al obtener planta:", error.message);
-    return null;
-  }
-
-  if (withOwner && data) {
-    return { ...data, profile: data.profiles ?? null };
-  }
-
-  return data;
-}
-
-// 🌸 Obtener plantas disponibles del usuario autenticado
-export async function fetchAvailablePlants(): Promise<Plant[]> {
-  const userId = await getCurrentUserId();
-  if (!userId) return [];
-
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select("*")
-    .eq("user_id", userId)
-    .eq("disponible", true)
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data ?? [];
+      {/* 🔍 Modal de detalles */}
+      <PlantDetailsModal
+        open={openDetails}
+        onOpenChange={setOpenDetails}
+        plant={selectedPlant}
+      />
+    </div>
+  );
 }

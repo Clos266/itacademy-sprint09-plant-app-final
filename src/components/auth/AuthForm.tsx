@@ -89,8 +89,8 @@ export function AuthForm({ mode }: AuthFormProps) {
           </CardTitle>
           <CardDescription className="text-center">
             {mode === "login"
-              ? "Log in to manage your plants 🌱"
-              : "Join our plant swap community 🌿"}
+              ? "Log in to manage your plants "
+              : "Join our plant swap community "}
           </CardDescription>
         </CardHeader>
 

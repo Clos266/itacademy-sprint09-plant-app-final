@@ -15,7 +15,7 @@ export default function Router() {
         <Route path="/" element={<HomePage />} />
         <Route path="events" element={<Events />} />
         <Route path="swaps" element={<SwapsPage />} />
-        <Route path="plants" element={<PlantsPage />} />
+        <Route path="plants" element={<PlantPage />} />
 
         <Route path="pages"></Route>
         <Route path="login" element={<Login />} />

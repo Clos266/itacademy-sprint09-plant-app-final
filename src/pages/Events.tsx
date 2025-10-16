@@ -59,7 +59,7 @@ export default function EventsPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[50vh]">
-        <p className="text-muted-foreground">🌿 Cargando eventos...</p>
+        <p className="text-muted-foreground">Cargando eventos...</p>
       </div>
     );
   }
