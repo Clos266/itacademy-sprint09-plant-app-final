@@ -125,7 +125,7 @@ export default function MyPlantsPage() {
     <>
       {/* 🌿 Header */}
       <PageHeader>
-        <PageHeaderHeading>🌿 My Plants</PageHeaderHeading>
+        <PageHeaderHeading>My Plants</PageHeaderHeading>
       </PageHeader>
 
       <Card className="mt-4">
