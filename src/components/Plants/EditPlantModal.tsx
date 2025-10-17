@@ -3,8 +3,8 @@ import { ModalDialog } from "@/components/modals/ModalDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import type { Plant } from "@/types/supabase";
+import { ImageUploader } from "@/components/common/ImageUploader";
 
 interface EditPlantModalProps {
   open: boolean;
@@ -20,8 +20,8 @@ export function EditPlantModal({
   onSave,
 }: EditPlantModalProps) {
   const [formData, setFormData] = useState<Partial<Plant>>({});
+  const [uploading, setUploading] = useState(false);
 
-  // Load plant data into state when modal opens
   useEffect(() => {
     if (plant) setFormData(plant);
   }, [plant]);
@@ -31,7 +31,7 @@ export function EditPlantModal({
   };
 
   const handleSubmit = () => {
-    if (!plant) return;
+    if (!plant || uploading) return;
     onSave(plant.id, formData);
     onOpenChange(false);
   };
@@ -41,60 +41,28 @@ export function EditPlantModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Edit Plant"
-      description="Update your plant details below."
       onConfirm={handleSubmit}
-      confirmLabel="Save Changes"
+      confirmLabel={uploading ? "Uploading..." : "Save Changes"}
     >
+      {/* 🖼️ Cambiar imagen */}
+
       {plant ? (
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="nombre_comun">Common Name</Label>
-            <Input
-              id="nombre_comun"
-              value={formData.nombre_comun || ""}
-              onChange={(e) => handleChange("nombre_comun", e.target.value)}
+        <div className="max-w-sm sm:max-w-md lg:max-w-md mx-auto max-h-[75vh] overflow-y-auto space-y-4">
+          {/* 🧱 Grid compacto 2×2 */}
+          <div className="pt-2">
+            <ImageUploader
+              bucket="plants"
+              pathPrefix={`plants/${plant.id}`}
+              currentUrl={formData.image_url ?? null}
+              label="Change Image"
+              onUpload={(publicUrl: string) => {
+                setUploading(false);
+                handleChange("image_url", publicUrl);
+              }}
             />
           </div>
-
-          <div>
-            <Label htmlFor="nombre_cientifico">Scientific Name</Label>
-            <Input
-              id="nombre_cientifico"
-              value={formData.nombre_cientifico || ""}
-              onChange={(e) =>
-                handleChange("nombre_cientifico", e.target.value)
-              }
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="familia">Family</Label>
-            <Input
-              id="familia"
-              value={formData.familia || ""}
-              onChange={(e) => handleChange("familia", e.target.value)}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="especie">Species</Label>
-            <Input
-              id="especie"
-              value={formData.especie || ""}
-              onChange={(e) => handleChange("especie", e.target.value)}
-            />
-          </div>
-
-          {/* <div>
-            <Label htmlFor="notas">Notes</Label>
-            <Textarea
-              id="notas"
-              value={formData.notas || ""}
-              onChange={(e) => handleChange("notas", e.target.value)}
-            />
-          </div> */}
-
-          <div className="flex items-center space-x-2">
+          {/* ✅ Disponible para intercambio */}
+          <div className="flex items-center gap-2 pt-1">
             <Checkbox
               id="disponible"
               checked={formData.disponible ?? false}
@@ -103,6 +71,57 @@ export function EditPlantModal({
               }
             />
             <Label htmlFor="disponible">Available for swap</Label>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label className="p-2" htmlFor="nombre_comun">
+                Common Name
+              </Label>
+              <Input
+                id="nombre_comun"
+                placeholder="e.g. Monstera"
+                value={formData.nombre_comun || ""}
+                onChange={(e) => handleChange("nombre_comun", e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label className="p-2" htmlFor="nombre_cientifico">
+                Scientific Name
+              </Label>
+              <Input
+                id="nombre_cientifico"
+                placeholder="Auto-filled if known"
+                value={formData.nombre_cientifico || ""}
+                onChange={(e) =>
+                  handleChange("nombre_cientifico", e.target.value)
+                }
+              />
+            </div>
+
+            <div>
+              <Label className="p-2" htmlFor="especie">
+                Species
+              </Label>
+              <Input
+                id="especie"
+                placeholder="Monstera"
+                value={formData.especie || ""}
+                onChange={(e) => handleChange("especie", e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label className="p-2" htmlFor="familia">
+                Family
+              </Label>
+              <Input
+                id="familia"
+                placeholder="Araceae"
+                value={formData.familia || ""}
+                onChange={(e) => handleChange("familia", e.target.value)}
+              />
+            </div>
           </div>
         </div>
       ) : (

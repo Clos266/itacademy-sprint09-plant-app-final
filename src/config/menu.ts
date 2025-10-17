@@ -38,27 +38,4 @@ export const mainMenu: MenuType = [
     url: "/plants",
     icon: LeafIcon,
   },
-
-  {
-    title: "Pages",
-    url: "/pages",
-    icon: Files,
-    items: [
-      {
-        title: "Login",
-        url: "/pages/login",
-        icon: Files,
-      },
-      {
-        title: "Signup",
-        url: "/pages/signup",
-        icon: Files,
-      },
-      {
-        title: "Create Profile",
-        url: "/pages/new-profile",
-        icon: Files,
-      },
-    ],
-  },
 ];
