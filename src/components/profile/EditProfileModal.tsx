@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/services/supabaseClient";
 import { fetchUserById, updateUser } from "@/services/userService";
 import { ImageUploader } from "@/components/common/ImageUploader";
@@ -26,92 +25,50 @@ export function EditProfileModal({
   open,
   onOpenChange,
 }: EditProfileModalProps) {
-  const navigate = useNavigate();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     username: "",
     ciudad: "",
     cp: "",
     avatar_url: "",
   });
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // 🔹 Load current profile with cleanup
+  // 🔹 Load current profile
   useEffect(() => {
     if (!open) return;
-
-    let isMounted = true;
-
-    const loadProfile = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!isMounted) return;
-
-        if (!user) {
-          setError("No user found");
-          return;
-        }
-
-        const data = await fetchUserById(user.id);
-
-        if (!isMounted) return;
-
-        if (data) {
-          setProfile(data);
-          setForm({
-            username: data.username || "",
-            ciudad: data.ciudad || "",
-            cp: data.cp || "",
-            avatar_url: data.avatar_url || "",
-          });
-        } else {
-          setError("Could not load profile");
-        }
-      } catch (err) {
-        console.error("Error loading profile:", err);
-        if (isMounted) {
-          setError("Failed to load profile");
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase.auth.getUser();
+      const user = data.user;
+      if (!user) return;
+      const userData = await fetchUserById(user.id);
+      if (userData) {
+        setProfile(userData);
+        setForm({
+          username: userData.username || "",
+          ciudad: userData.ciudad || "",
+          cp: userData.cp || "",
+          avatar_url: userData.avatar_url || "",
+        });
       }
-    };
-
-    loadProfile();
-
-    return () => {
-      isMounted = false;
-    };
+      setLoading(false);
+    })();
   }, [open]);
 
-  // 🔹 Save changes
+  // 🔹 Save profile
   const handleSave = async () => {
     if (!profile) return;
-
-    setSaving(true);
-    setError(null);
-
     try {
-      const updated = await updateUser(profile.id, form);
-      setProfile(updated);
-      onOpenChange(false);
-
-      setTimeout(() => {
-        navigate("/");
-      }, 300);
+      setSaving(true);
+      await updateUser(profile.id, form);
+      onOpenChange(false); // Realtime ya actualiza el header
     } catch (err) {
       console.error("Error updating profile:", err);
       setError(err instanceof Error ? err.message : "Failed to save profile");
+    } finally {
       setSaving(false);
     }
   };
@@ -122,24 +79,24 @@ export function EditProfileModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-6 rounded-2xl">
         <DialogHeader>
-          <DialogTitle>{loading ? "Loading" : "Edit profile"}</DialogTitle>
+          <DialogTitle>{loading ? "Loading..." : "Edit profile"}</DialogTitle>
           <DialogDescription>
             {loading
-              ? "Please wait while your data loads."
+              ? "Please wait while we load your data."
               : "Update your public information below."}
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <div className="text-center text-muted-foreground p-6">
+          <p className="text-center text-muted-foreground py-6">
             Loading profile...
-          </div>
+          </p>
         ) : (
           <>
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 mb-4">
+              <p className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 mb-4">
                 {error}
-              </div>
+              </p>
             )}
 
             <div className="flex flex-col items-center gap-3 mt-4 mb-6">
@@ -153,7 +110,7 @@ export function EditProfileModal({
             </div>
 
             <div className="space-y-4">
-              <div className="space-y-1">
+              <div>
                 <Label htmlFor="username">Username</Label>
                 <Input
                   id="username"
@@ -166,7 +123,7 @@ export function EditProfileModal({
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
+                <div>
                   <Label htmlFor="ciudad">City</Label>
                   <Input
                     id="ciudad"
@@ -177,7 +134,7 @@ export function EditProfileModal({
                     disabled={saving}
                   />
                 </div>
-                <div className="space-y-1">
+                <div>
                   <Label htmlFor="cp">Postal Code</Label>
                   <Input
                     id="cp"

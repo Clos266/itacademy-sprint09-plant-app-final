@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from "react-router";
+import { Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/services/supabaseClient";
 
@@ -8,11 +8,12 @@ interface Props {
 
 export default function ProtectedRoute({ children }: Props) {
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<null | object>(null);
+  const [session, setSession] = useState<any>(null);
   const location = useLocation();
 
+  // ✅ Rutas públicas (login y signup)
   const isPublicRoute =
-    location.pathname === "/login" || location.pathname === "/signin";
+    location.pathname === "/login" || location.pathname === "/signup";
 
   useEffect(() => {
     const getSession = async () => {
@@ -22,6 +23,7 @@ export default function ProtectedRoute({ children }: Props) {
     };
     getSession();
 
+    // 🔁 Escucha cambios de sesión (login/logout/signup)
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
@@ -33,12 +35,16 @@ export default function ProtectedRoute({ children }: Props) {
     };
   }, []);
 
-  if (loading) return <div className="p-6 text-center">Cargando...</div>;
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
 
-  // 🔓 Si está en una ruta pública, renderiza libremente
-  if (isPublicRoute) return <>{children}</>;
+  // 🔓 Rutas públicas: login/signup
+  if (isPublicRoute) {
+    // Si el usuario ya está autenticado → mándalo al home
+    if (session) return <Navigate to="/" replace />;
+    return <>{children}</>;
+  }
 
-  // 🚪 Si no está autenticado, redirige al login
+  // 🚪 Si no está autenticado → mándalo a login
   if (!session) return <Navigate to="/login" replace />;
 
   // ✅ Usuario autenticado → muestra la app

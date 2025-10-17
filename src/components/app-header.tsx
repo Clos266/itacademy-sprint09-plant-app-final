@@ -1,4 +1,4 @@
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { mainMenu } from "@/config/menu";
 import { cn } from "@/lib/utils";
@@ -10,43 +10,80 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
 import { AppLogo } from "./app-logo";
 import { AppSidebar } from "./app-sidebar";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { supabase } from "@/services/supabaseClient";
-import { EditProfileModal } from "./profile/EditProfileModal";
 import { fetchUserById } from "@/services/userService";
+import { EditProfileModal } from "./profile/EditProfileModal";
+
+type SupabaseUser = {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, any>;
+} | null;
 
 export function AppHeader() {
-  const location = useLocation();
   const [openEdit, setOpenEdit] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<SupabaseUser>(null);
+  const [profile, setProfile] = useState<Record<string, any> | null>(null);
 
-  // 🔹 Fetch current session user + profile info
+  // 🔹 Cargar perfil actual
+  const loadProfile = async () => {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      setUser(null);
+      setProfile(null);
+      return;
+    }
+
+    setUser(data.user);
+    const profileData = await fetchUserById(data.user.id);
+    if (profileData) setProfile(profileData);
+  };
+
   useEffect(() => {
-    const loadUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    loadProfile();
 
-      if (user) {
-        setUser(user);
+    // ✅ 1️⃣ Detectar cambios de sesión (login/logout/signup)
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      loadProfile();
+    });
 
-        // Fetch profile data from Supabase "profiles" table
-        const profileData = await fetchUserById(user.id);
-        if (profileData) setProfile(profileData);
-      }
+    // ✅ 2️⃣ Detectar cambios en Supabase (Realtime)
+    const channel = supabase
+      .channel("realtime:profiles")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        (payload) => {
+          if (
+            payload.new &&
+            "id" in payload.new &&
+            payload.new.id === user?.id
+          ) {
+            loadProfile();
+          }
+        }
+      )
+      .subscribe();
+
+    // ✅ 3️⃣ Detectar actualizaciones locales (por ejemplo, al guardar en el modal)
+    const handleLocalUpdate = () => loadProfile();
+    window.addEventListener("profileUpdated", handleLocalUpdate);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("profileUpdated", handleLocalUpdate);
+      authListener.subscription.unsubscribe();
     };
-
-    loadUser();
-  }, []);
+  }, [user?.id]);
 
   return (
     <header className="bg-background sticky top-0 z-50 border-b">
-      <div className="w-full ~max-w-7xl mx-auto flex items-center gap-2 h-14 px-4 md:px-8">
+      <div className="w-full max-w-7xl mx-auto flex items-center gap-2 h-14 px-4 md:px-8">
+        {/* 🌿 Logo + Sidebar */}
         <div className="flex items-center gap-2 md:gap-0">
           <AppSidebar />
           <Link to="/">
@@ -55,64 +92,26 @@ export function AppHeader() {
         </div>
 
         <div className="ml-4 flex-1 flex items-center justify-between">
-          {/* 🌿 Main menu */}
+          {/* 📋 Main Menu */}
           <div className="flex-1">
             <nav className="hidden md:flex gap-1">
-              {mainMenu.map((item, index) =>
-                item.items && item.items.length > 0 ? (
-                  <DropdownMenu key={index} modal={false}>
-                    <DropdownMenuTrigger className="focus-visible:outline-none">
-                      <NavLink
-                        key={index}
-                        to={item.url}
-                        className={({ isActive }) =>
-                          cn(
-                            "flex items-center gap-2 rounded-md p-2.5 text-sm transition hover:bg-accent hover:text-accent-foreground focus-visible:ring-2",
-                            isActive
-                              ? "text-foreground bg-accent"
-                              : "text-foreground/70"
-                          )
-                        }
-                      >
-                        {item.icon && <item.icon />}
-                        <span className="font-medium">{item.title}</span>
-                        <ChevronDown className="!size-3 -ml-1" />
-                      </NavLink>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="min-w-56">
-                      {item.items.map((subItem, i) => (
-                        <DropdownMenuItem key={i} asChild>
-                          <NavLink
-                            to={subItem.url}
-                            className={cn(
-                              "cursor-pointer",
-                              subItem.url === location.pathname && "bg-muted"
-                            )}
-                          >
-                            {subItem.title}
-                          </NavLink>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <NavLink
-                    key={index}
-                    to={item.url}
-                    className={({ isActive }) =>
-                      cn(
-                        "flex items-center gap-2 rounded-md p-2.5 text-sm hover:bg-accent hover:text-accent-foreground",
-                        isActive
-                          ? "text-foreground bg-accent"
-                          : "text-foreground/70"
-                      )
-                    }
-                  >
-                    {item.icon && <item.icon />}
-                    <span className="font-medium">{item.title}</span>
-                  </NavLink>
-                )
-              )}
+              {mainMenu.map((item, index) => (
+                <NavLink
+                  key={index}
+                  to={item.url}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-2 rounded-md p-2.5 text-sm hover:bg-accent hover:text-accent-foreground",
+                      isActive
+                        ? "text-foreground bg-accent"
+                        : "text-foreground/70"
+                    )
+                  }
+                >
+                  {item.icon && <item.icon />}
+                  <span className="font-medium">{item.title}</span>
+                </NavLink>
+              ))}
             </nav>
           </div>
 
