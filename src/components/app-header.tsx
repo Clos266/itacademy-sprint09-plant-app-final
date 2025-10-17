@@ -15,6 +15,7 @@ import { AppSidebar } from "./app-sidebar";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { baseUrl } from "@/config/app";
+import { supabase } from "@/services/supabaseClient";
 
 export function AppHeader() {
   const location = useLocation();
@@ -117,7 +118,15 @@ export function AppHeader() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Log out</DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={async () => {
+                    const { error } = await supabase.auth.signOut();
+                    if (error) console.error("Logout error:", error.message);
+                    window.location.href = "/login"; // o navigate("/login");
+                  }}
+                >
+                  Log out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </nav>
