@@ -1,4 +1,5 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { mainMenu } from "@/config/menu";
 import { cn } from "@/lib/utils";
 import {
@@ -14,11 +15,34 @@ import { AppLogo } from "./app-logo";
 import { AppSidebar } from "./app-sidebar";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { baseUrl } from "@/config/app";
 import { supabase } from "@/services/supabaseClient";
+import { EditProfileModal } from "./profile/EditProfileModal";
+import { fetchUserById } from "@/services/userService";
 
 export function AppHeader() {
   const location = useLocation();
+  const [openEdit, setOpenEdit] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+
+  // 🔹 Fetch current session user + profile info
+  useEffect(() => {
+    const loadUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        setUser(user);
+
+        // Fetch profile data from Supabase "profiles" table
+        const profileData = await fetchUserById(user.id);
+        if (profileData) setProfile(profileData);
+      }
+    };
+
+    loadUser();
+  }, []);
 
   return (
     <header className="bg-background sticky top-0 z-50 border-b">
@@ -31,19 +55,19 @@ export function AppHeader() {
         </div>
 
         <div className="ml-4 flex-1 flex items-center justify-between">
+          {/* 🌿 Main menu */}
           <div className="flex-1">
             <nav className="hidden md:flex gap-1">
               {mainMenu.map((item, index) =>
                 item.items && item.items.length > 0 ? (
-                  <DropdownMenu key={index}>
+                  <DropdownMenu key={index} modal={false}>
                     <DropdownMenuTrigger className="focus-visible:outline-none">
                       <NavLink
                         key={index}
                         to={item.url}
                         className={({ isActive }) =>
                           cn(
-                            "flex items-center gap-2 overflow-hidden rounded-md p-2.5 text-left text-sm outline-none transition-[width,height,padding] hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>svg]:size-4",
-                            "h-8 text-sm hover:bg-accent hover:text-accent-foreground",
+                            "flex items-center gap-2 rounded-md p-2.5 text-sm transition hover:bg-accent hover:text-accent-foreground focus-visible:ring-2",
                             isActive
                               ? "text-foreground bg-accent"
                               : "text-foreground/70"
@@ -56,8 +80,8 @@ export function AppHeader() {
                       </NavLink>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="min-w-56">
-                      {item.items.map((subItem, index) => (
-                        <DropdownMenuItem key={index} asChild>
+                      {item.items.map((subItem, i) => (
+                        <DropdownMenuItem key={i} asChild>
                           <NavLink
                             to={subItem.url}
                             className={cn(
@@ -77,8 +101,7 @@ export function AppHeader() {
                     to={item.url}
                     className={({ isActive }) =>
                       cn(
-                        "flex items-center gap-2 overflow-hidden rounded-md p-2.5 text-left text-sm outline-none transition-[width,height,padding] hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 active:bg-accent active:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>svg]:size-4",
-                        "h-8 text-sm hover:bg-accent hover:text-accent-foreground",
+                        "flex items-center gap-2 rounded-md p-2.5 text-sm hover:bg-accent hover:text-accent-foreground",
                         isActive
                           ? "text-foreground bg-accent"
                           : "text-foreground/70"
@@ -92,37 +115,61 @@ export function AppHeader() {
               )}
             </nav>
           </div>
-          <nav className="flex gap-1">
-            <DropdownMenu>
+
+          {/* 👤 User Menu */}
+          <nav className="flex items-center gap-2">
+            {profile && (
+              <div className="hidden sm:flex flex-col items-end mr-2">
+                <span className="text-sm font-medium leading-none text-foreground">
+                  @{profile.username || "user"}
+                </span>
+              </div>
+            )}
+
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="relative h-8 w-8 rounded-full cursor-pointer ml-2"
+                  className="relative h-8 w-8 rounded-full cursor-pointer"
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage
-                      src={baseUrl + "/avatars/shadcn.jpg"}
-                      alt="shadcn"
+                      src={
+                        profile?.avatar_url ||
+                        user?.user_metadata?.avatar_url ||
+                        "/imagenotfound.jpeg"
+                      }
+                      alt={profile?.username || "User"}
                     />
-                    <AvatarFallback className="rounded-lg">SC</AvatarFallback>
+                    <AvatarFallback>
+                      {profile?.username?.[0]?.toUpperCase() ||
+                        user?.email?.[0]?.toUpperCase() ||
+                        "U"}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">shadcn</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      m@example.com
+                      {user?.email || "No email"}
                     </p>
                   </div>
                 </DropdownMenuLabel>
+
                 <DropdownMenuSeparator />
+
+                <DropdownMenuItem onClick={() => setOpenEdit(true)}>
+                  Edit profile
+                </DropdownMenuItem>
+
                 <DropdownMenuItem
                   onClick={async () => {
                     const { error } = await supabase.auth.signOut();
                     if (error) console.error("Logout error:", error.message);
-                    window.location.href = "/login"; // o navigate("/login");
+                    window.location.href = "/login";
                   }}
                 >
                   Log out
@@ -132,6 +179,9 @@ export function AppHeader() {
           </nav>
         </div>
       </div>
+
+      {/* 🧩 Profile Edit Modal */}
+      <EditProfileModal open={openEdit} onOpenChange={setOpenEdit} />
     </header>
   );
 }
