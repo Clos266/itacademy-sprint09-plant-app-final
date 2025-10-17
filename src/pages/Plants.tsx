@@ -13,7 +13,18 @@ import {
 } from "@/components/ui/select";
 import { usePagination } from "@/hooks/usePagination";
 import { SearchInput } from "@/components/common/SearchInput";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 import { NewPlantButton } from "@/components/Plants/NewPlantModal";
 import { EditPlantModal } from "@/components/Plants/EditPlantModal";
@@ -108,6 +119,17 @@ export default function MyPlantsPage() {
       );
     } catch (err) {
       console.error("Error al actualizar planta:", err);
+    }
+  };
+
+  // 🗑️ Eliminar planta
+  const handleDelete = async (id: number) => {
+    try {
+      const { error } = await supabase.from("plants").delete().eq("id", id);
+      if (error) throw error;
+      setPlants((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error("Error deleting plant:", err);
     }
   };
 
@@ -213,11 +235,54 @@ export default function MyPlantsPage() {
           },
           {
             key: "actions",
-            header: "Edit",
+            header: "Actions",
             render: (p: Plant) => (
-              <Button size="sm" variant="outline" onClick={() => handleEdit(p)}>
-                <Pencil className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* ✏️ Edit button */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleEdit(p)}
+                  title="Edit"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+
+                {/* 🗑️ Delete with AlertDialog */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      title="Delete"
+                      className="flex items-center gap-1"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Plant</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete{" "}
+                        <span className="font-semibold">{p.nombre_comun}</span>?{" "}
+                        <br />
+                        This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(p.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             ),
           },
         ]}
