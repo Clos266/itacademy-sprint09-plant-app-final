@@ -261,13 +261,6 @@ export default function SwapsPage() {
         onPageChange={goToPage}
       />
 
-      {/* ➕ CTA */}
-      <div className="flex justify-end mt-6">
-        <Button>
-          <Plus />
-        </Button>
-      </div>
-
       {/* 🌿 Modales */}
       <PlantDetailsModal
         open={!!selectedPlantId}
