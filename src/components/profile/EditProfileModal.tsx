@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/services/supabaseClient";
 import { fetchUserById, updateUser } from "@/services/userService";
 import { ImageUploader } from "@/components/common/ImageUploader";
+import { showSuccess, showError } from "@/services/toastService"; // ✅ añadimos esto
 import type { Database } from "@/types/supabase";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -34,27 +35,33 @@ export function EditProfileModal({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // 🔹 Load current profile
   useEffect(() => {
     if (!open) return;
     (async () => {
-      setLoading(true);
-      const { data } = await supabase.auth.getUser();
-      const user = data.user;
-      if (!user) return;
-      const userData = await fetchUserById(user.id);
-      if (userData) {
-        setProfile(userData);
-        setForm({
-          username: userData.username || "",
-          ciudad: userData.ciudad || "",
-          cp: userData.cp || "",
-          avatar_url: userData.avatar_url || "",
-        });
+      try {
+        setLoading(true);
+        const { data } = await supabase.auth.getUser();
+        const user = data.user;
+        if (!user) return;
+
+        const userData = await fetchUserById(user.id);
+        if (userData) {
+          setProfile(userData);
+          setForm({
+            username: userData.username || "",
+            ciudad: userData.ciudad || "",
+            cp: userData.cp || "",
+            avatar_url: userData.avatar_url || "",
+          });
+        }
+      } catch (err) {
+        console.error("Error loading profile:", err);
+        showError("Could not load profile data.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
   }, [open]);
 
@@ -64,10 +71,13 @@ export function EditProfileModal({
     try {
       setSaving(true);
       await updateUser(profile.id, form);
-      onOpenChange(false); // Realtime ya actualiza el header
+      showSuccess("Profile updated successfully!");
+      onOpenChange(false); // Realtime actualiza el resto automáticamente
     } catch (err) {
       console.error("Error updating profile:", err);
-      setError(err instanceof Error ? err.message : "Failed to save profile");
+      showError(
+        err instanceof Error ? err.message : "Failed to save profile changes."
+      );
     } finally {
       setSaving(false);
     }
@@ -93,19 +103,16 @@ export function EditProfileModal({
           </p>
         ) : (
           <>
-            {error && (
-              <p className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 mb-4">
-                {error}
-              </p>
-            )}
-
             <div className="flex flex-col items-center gap-3 mt-4 mb-6">
               <ImageUploader
                 bucket="avatars"
                 pathPrefix={profile?.id || ""}
                 currentUrl={form.avatar_url}
                 label="Change photo"
-                onUpload={(url) => setForm({ ...form, avatar_url: url })}
+                onUpload={(url) => {
+                  setForm({ ...form, avatar_url: url });
+                  showSuccess("Profile photo updated!");
+                }}
               />
             </div>
 
@@ -149,7 +156,10 @@ export function EditProfileModal({
             <div className="flex justify-end gap-2 mt-6">
               <Button
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() => {
+                  onOpenChange(false);
+                  showError("Edit cancelled");
+                }}
                 disabled={saving}
               >
                 Cancel

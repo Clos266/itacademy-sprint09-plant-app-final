@@ -4,19 +4,20 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Leaf, MapPin, Filter, RefreshCcw } from "lucide-react";
-
 import { FilterBar } from "@/components/common/FilterBar";
 import { SearchInput } from "@/components/common/SearchInput";
 import { ProposeSwapModal } from "@/components/swaps/ProposeSwapModal";
-
-import { supabase } from "@/services/supabaseClient";
+import { Spinner } from "@/components/ui/spinner";
+import { showError } from "@/services/toastService";
+import { fetchPlants } from "@/services/plantCrudService";
 import type { Database } from "@/types/supabase";
+import { showSuccess } from "@/services/toastService";
+import { supabase } from "@/services/supabaseClient";
 
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-
 interface FullPlant extends Plant {
-  profile?: Profile;
+  profile?: Profile | null;
 }
 
 export default function PlantsSwapPage() {
@@ -26,57 +27,59 @@ export default function PlantsSwapPage() {
     "all" | "available" | "unavailable"
   >("all");
   const [search, setSearch] = useState("");
-
   const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
   const [openSwap, setOpenSwap] = useState(false);
   const [targetPlant, setTargetPlant] = useState<FullPlant | null>(null);
 
-  // 🔹 Fetch all plants with owner info
+  // 🌿 Fetch all plants with owner info
   useEffect(() => {
-    const fetchPlants = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("plants")
-        .select("*, profiles(*)")
-        .order("id", { ascending: true });
+    const loadPlants = async () => {
+      try {
+        setLoading(true);
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
-      if (error) {
-        console.error("Error fetching plants:", error.message);
-      } else {
-        // Asegura estructura homogénea
-        const formatted = data.map((p: any) => ({
-          ...p,
-          profile: p.profiles,
-        }));
-        setPlants(formatted);
+        if (userError) throw userError;
+        if (!user) throw new Error("No active session");
+
+        // ✅ Trae todas las plantas con su dueño
+        const data = await fetchPlants(true);
+
+        // 🚫 Filtra tus propias plantas
+        const otherPlants = data.filter((p) => p.user_id !== user.id);
+
+        setPlants(otherPlants);
+      } catch (err) {
+        console.error("Error fetching plants:", err);
+        showError("Could not load plants.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    fetchPlants();
+    loadPlants();
   }, []);
-
-  // 🔍 Filter & Search
+  // 🔍 Filter + search
   const filteredPlants = plants.filter((plant) => {
+    const term = search.toLowerCase();
     const matchesSearch =
-      plant.nombre_comun.toLowerCase().includes(search.toLowerCase()) ||
-      (plant.nombre_cientifico || "")
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      (plant.especie || "").toLowerCase().includes(search.toLowerCase());
+      plant.nombre_comun?.toLowerCase().includes(term) ||
+      plant.nombre_cientifico?.toLowerCase().includes(term) ||
+      plant.especie?.toLowerCase().includes(term);
+
     if (!matchesSearch) return false;
     if (filterType === "available") return plant.disponible;
     if (filterType === "unavailable") return !plant.disponible;
     return true;
   });
 
-  // const selectedPlant =
-  //   filteredPlants.find((p) => p.id === selectedPlantId) || null;
-
+  // 🌀 Spinner mientras carga
   if (loading) {
     return (
-      <div className="p-8 text-center text-muted-foreground">
-        Cargando plantas...
+      <div className="flex flex-col justify-center items-center h-[70vh] text-muted-foreground">
+        <Spinner className="w-6 h-6 mb-4" />
       </div>
     );
   }
@@ -105,27 +108,16 @@ export default function PlantsSwapPage() {
             filters={
               <>
                 <Filter className="h-4 w-4 text-muted-foreground" />
-                <Button
-                  variant={filterType === "all" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("all")}
-                >
-                  All
-                </Button>
-                <Button
-                  variant={filterType === "available" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("available")}
-                >
-                  Available
-                </Button>
-                <Button
-                  variant={filterType === "unavailable" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("unavailable")}
-                >
-                  Unavailable
-                </Button>
+                {["all", "available", "unavailable"].map((type) => (
+                  <Button
+                    key={type}
+                    variant={filterType === type ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFilterType(type as any)}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </Button>
+                ))}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -139,11 +131,11 @@ export default function PlantsSwapPage() {
         </CardContent>
       </Card>
 
-      {/* 🪴 Plant list */}
+      {/* 🪴 Plant List */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredPlants.map((plant) => {
-          const isSelected = selectedPlantId === plant.id;
           const owner = plant.profile;
+          const isSelected = selectedPlantId === plant.id;
 
           return (
             <Card
@@ -153,7 +145,6 @@ export default function PlantsSwapPage() {
               }`}
               onClick={() => setSelectedPlantId(plant.id)}
             >
-              {/* 📸 Image */}
               <CardContent className="p-4 pb-0">
                 <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
                   <img
@@ -171,7 +162,6 @@ export default function PlantsSwapPage() {
                 </div>
               </CardContent>
 
-              {/* 🌱 Info */}
               <CardHeader className="flex-1 flex flex-col justify-between">
                 <div>
                   <h3 className="text-xl font-bold truncate">
@@ -191,7 +181,6 @@ export default function PlantsSwapPage() {
                           {owner.ciudad || "Unknown location"}
                         </span>
                       </div>
-
                       <div className="flex items-center gap-2 text-sm mb-1">
                         <img
                           src={owner.avatar_url || "/avatar-placeholder.png"}
@@ -242,12 +231,10 @@ export default function PlantsSwapPage() {
         open={openSwap}
         onOpenChange={setOpenSwap}
         targetPlant={targetPlant}
-        userPlants={plants.filter((p) => p.disponible)} // tus plantas disponibles
+        userPlants={plants.filter((p) => p.disponible)}
         onConfirm={(proposal) => {
-          console.log("📩 New swap proposal:", proposal);
-          alert(
-            `Swap proposed: your plant #${proposal.offeredPlantId} for plant #${proposal.targetPlantId}`
-          );
+          console.log("📩 Swap proposed:", proposal);
+          showSuccess("Swap proposal sent!");
         }}
       />
     </div>
