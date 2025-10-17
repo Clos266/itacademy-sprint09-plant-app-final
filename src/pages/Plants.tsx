@@ -31,19 +31,22 @@ import { EditPlantModal } from "@/components/Plants/EditPlantModal";
 import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
 
 import type { Database } from "@/types/supabase";
-import { fetchPlantsByUser, updatePlant } from "@/services/plantCrudService";
+import {
+  fetchPlantsByUser,
+  updatePlant,
+  deletePlant,
+  subscribeToUserPlants,
+} from "@/services/plantCrudService";
+import { showSuccess, showError } from "@/services/toastService";
 import { supabase } from "@/services/supabaseClient";
 
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
 
 export default function MyPlantsPage() {
-  // 🌱 State
   const [plants, setPlants] = useState<Plant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
-
   const [openEdit, setOpenEdit] = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
-
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<
     "all" | "available" | "unavailable"
@@ -52,8 +55,10 @@ export default function MyPlantsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 🔄 Cargar solo las plantas del usuario actual
+  // 🔄 Load and subscribe to user plants
   useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+
     const loadMyPlants = async () => {
       try {
         setLoading(true);
@@ -63,80 +68,99 @@ export default function MyPlantsPage() {
         } = await supabase.auth.getUser();
 
         if (userError) throw userError;
-        if (!user) throw new Error("No hay sesión activa");
+        if (!user) throw new Error("No active session");
 
         const data = await fetchPlantsByUser(user.id);
         setPlants(data);
-      } catch (err) {
-        console.error("Error al cargar mis plantas:", err);
-        setError("No se pudieron cargar tus plantas.");
+
+        // 🪴 Realtime listener
+        unsubscribe = subscribeToUserPlants(user.id, (payload) => {
+          if (payload.eventType === "INSERT" && payload.new) {
+            setPlants((prev) => [payload.new, ...prev]);
+            showSuccess(`Added new plant: ${payload.new.nombre_comun}`);
+          }
+          if (payload.eventType === "UPDATE" && payload.new) {
+            setPlants((prev) =>
+              prev.map((p) => (p.id === payload.new.id ? payload.new : p))
+            );
+          }
+          if (payload.eventType === "DELETE" && payload.old) {
+            setPlants((prev) => prev.filter((p) => p.id !== payload.old.id));
+            showError(`Deleted plant: ${payload.old.nombre_comun}`);
+          }
+        });
+      } catch (err: any) {
+        console.error("Error loading plants:", err);
+        showError("Could not load your plants.");
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
     loadMyPlants();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
-  // 🔍 Filtrado local
-  const filtered = plants.filter((p) => {
-    const matchesSearch = p.nombre_comun
-      ?.toLowerCase()
-      .includes(search.toLowerCase());
-    const matchesAvailability =
-      filterType === "all"
-        ? true
-        : filterType === "available"
-        ? p.disponible
-        : !p.disponible;
-    const matchesCategory =
-      category === "all" ||
-      p.especie?.toLowerCase().includes(category.toLowerCase());
-    return matchesSearch && matchesAvailability && matchesCategory;
-  });
-
-  // 🔹 Paginación
-  const { page, totalPages, paginated, goToPage } = usePagination(filtered, 5);
-
-  // ✏️ Edit handlers
-  const handleEdit = (plant: Plant) => {
-    setSelectedPlant(plant);
-    setOpenEdit(true);
-  };
-
-  // 👁️ Details modal handler
-  const handleOpenDetails = (plant: Plant) => {
-    setSelectedPlant(plant);
-    setOpenDetails(true);
-  };
-
-  // 💾 Guardar cambios en Supabase
+  // ✏️ Update plant
   const handleSave = async (id: number, updated: Partial<Plant>) => {
     try {
       const newPlant = await updatePlant(id, updated);
       setPlants((prev) =>
         prev.map((p) => (p.id === id ? { ...p, ...newPlant } : p))
       );
-    } catch (err) {
-      console.error("Error al actualizar planta:", err);
+      showSuccess("Plant updated successfully!");
+    } catch (err: any) {
+      showError(err.message || "Error updating plant.");
     }
   };
 
-  // 🗑️ Eliminar planta
+  // 🗑️ Delete plant
   const handleDelete = async (id: number) => {
     try {
-      const { error } = await supabase.from("plants").delete().eq("id", id);
-      if (error) throw error;
-      setPlants((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      console.error("Error deleting plant:", err);
+      await deletePlant(id);
+      // no need to manually update state (realtime handles it)
+      showSuccess("Plant deleted!");
+    } catch (err: any) {
+      showError(err.message || "Error deleting plant.");
     }
+  };
+
+  // 🔍 Local filtering
+  const filtered = plants.filter((p) => {
+    const searchMatch = p.nombre_comun
+      ?.toLowerCase()
+      .includes(search.toLowerCase());
+    const availabilityMatch =
+      filterType === "all"
+        ? true
+        : filterType === "available"
+        ? p.disponible
+        : !p.disponible;
+    const categoryMatch =
+      category === "all" ||
+      p.especie?.toLowerCase().includes(category.toLowerCase());
+    return searchMatch && availabilityMatch && categoryMatch;
+  });
+
+  const { page, totalPages, paginated, goToPage } = usePagination(filtered, 5);
+
+  const handleEdit = (plant: Plant) => {
+    setSelectedPlant(plant);
+    setOpenEdit(true);
+  };
+
+  const handleOpenDetails = (plant: Plant) => {
+    setSelectedPlant(plant);
+    setOpenDetails(true);
   };
 
   if (loading)
     return (
       <div className="flex justify-center items-center h-[60vh] text-muted-foreground">
-        Cargando tus plantas...
+        Loading your plants...
       </div>
     );
 
@@ -145,7 +169,6 @@ export default function MyPlantsPage() {
 
   return (
     <>
-      {/* 🌿 Header */}
       <PageHeader>
         <PageHeaderHeading>My Plants</PageHeaderHeading>
       </PageHeader>
@@ -163,30 +186,17 @@ export default function MyPlantsPage() {
             }
             filters={
               <>
-                {/* Filter by availability */}
-                <Button
-                  variant={filterType === "all" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("all")}
-                >
-                  All
-                </Button>
-                <Button
-                  variant={filterType === "available" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("available")}
-                >
-                  Available
-                </Button>
-                <Button
-                  variant={filterType === "unavailable" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("unavailable")}
-                >
-                  Unavailable
-                </Button>
+                {["all", "available", "unavailable"].map((type) => (
+                  <Button
+                    key={type}
+                    variant={filterType === type ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFilterType(type as any)}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </Button>
+                ))}
 
-                {/* Category select */}
                 <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Category" />
@@ -199,7 +209,6 @@ export default function MyPlantsPage() {
                   </SelectContent>
                 </Select>
 
-                {/* ➕ New plant button */}
                 <NewPlantButton />
               </>
             }
@@ -207,7 +216,6 @@ export default function MyPlantsPage() {
         </CardContent>
       </Card>
 
-      {/* 📋 Plants Table */}
       <PaginatedTable
         data={paginated}
         columns={[
@@ -238,7 +246,6 @@ export default function MyPlantsPage() {
             header: "Actions",
             render: (p: Plant) => (
               <div className="flex items-center gap-2">
-                {/* ✏️ Edit button */}
                 <Button
                   size="sm"
                   variant="outline"
@@ -248,15 +255,9 @@ export default function MyPlantsPage() {
                   <Pencil className="w-4 h-4" />
                 </Button>
 
-                {/* 🗑️ Delete with AlertDialog */}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      title="Delete"
-                      className="flex items-center gap-1"
-                    >
+                    <Button size="sm" variant="destructive" title="Delete">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </AlertDialogTrigger>
@@ -266,17 +267,13 @@ export default function MyPlantsPage() {
                       <AlertDialogTitle>Delete Plant</AlertDialogTitle>
                       <AlertDialogDescription>
                         Are you sure you want to delete{" "}
-                        <span className="font-semibold">{p.nombre_comun}</span>?{" "}
-                        <br />
+                        <span className="font-semibold">{p.nombre_comun}</span>?
                         This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDelete(p.id)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
+                      <AlertDialogAction onClick={() => handleDelete(p.id)}>
                         Delete
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -291,14 +288,12 @@ export default function MyPlantsPage() {
         onPageChange={goToPage}
       />
 
-      {/* 👁️ Details Modal */}
       <PlantDetailsModal
         open={openDetails}
         onOpenChange={setOpenDetails}
         plantId={selectedPlant?.id || null}
       />
 
-      {/* ✏️ Edit Modal */}
       <EditPlantModal
         open={openEdit}
         onOpenChange={setOpenEdit}
