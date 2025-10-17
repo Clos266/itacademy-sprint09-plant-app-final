@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/services/supabaseClient";
-import { Camera, Upload, Image as ImageIcon } from "lucide-react";
+import { Upload, Image as ImageIcon } from "lucide-react";
 
 interface ImageUploaderProps {
   bucket: "avatars" | "plants" | "events" | "swap_points";

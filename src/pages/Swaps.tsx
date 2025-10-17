@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { PaginatedTable } from "@/components/common/PaginatedTable";
 import { usePagination } from "@/hooks/usePagination";
 import { Toggle } from "@/components/ui/toggle";
-import { ArrowUpDown, Check, X, Plus } from "lucide-react";
+import { ArrowUpDown, Check, X } from "lucide-react";
 import { supabase } from "@/services/supabaseClient";
 import type { Database } from "@/types/supabase";
 import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";

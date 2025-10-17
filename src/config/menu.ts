@@ -1,5 +1,4 @@
 import {
-  Files,
   LucideIcon,
   HomeIcon,
   LeafIcon,
