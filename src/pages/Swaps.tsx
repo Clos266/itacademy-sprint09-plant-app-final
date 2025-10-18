@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import {
   Card,
@@ -8,74 +8,27 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PaginatedTable } from "@/components/common/PaginatedTable";
-import { usePagination } from "@/hooks/usePagination";
 import { Toggle } from "@/components/ui/toggle";
-import { ArrowUpDown, Check, X } from "lucide-react";
-import { supabase } from "@/services/supabaseClient";
-import type { Database } from "@/types/supabase";
+import { ArrowUpDown } from "lucide-react";
 import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
 import { UserDetailsModal } from "@/Users/UserDetailsModal";
+import { SwapInfoModal } from "@/components/swaps/SwapInfoModal";
+import { useSwaps } from "@/hooks/useSwaps";
+import type { Database } from "@/types/supabase";
+import { Spinner } from "@/components/ui/spinner";
 
 type Swap = Database["public"]["Tables"]["swaps"]["Row"];
-type Plant = Database["public"]["Tables"]["plants"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-
-interface FullSwap extends Swap {
-  sender: Profile | null;
-  receiver: Profile | null;
-  senderPlant: Plant | null;
-  receiverPlant: Plant | null;
-}
-
 type SwapStatus = "pending" | "accepted" | "rejected" | "completed";
 
 export default function SwapsPage() {
-  const [swaps, setSwaps] = useState<FullSwap[]>([]);
-  const [loading, setLoading] = useState(true);
-
+  const { swaps, loading, reload, userId, username } = useSwaps();
   const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
+  const [selectedSwap, setSelectedSwap] = useState<any | null>(null);
+  const [openSwapInfo, setOpenSwapInfo] = useState(false);
   const [activeStatuses, setActiveStatuses] = useState<SwapStatus[]>([]);
   const [sortColumn, setSortColumn] = useState<keyof Swap>("created_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-
-  // 🔁 Fetch swaps from Supabase
-  useEffect(() => {
-    const fetchSwaps = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("swaps")
-        .select(
-          `
-          *,
-          sender:sender_id(*),
-          receiver:receiver_id(*),
-          senderPlant:sender_plant_id(*),
-          receiverPlant:receiver_plant_id(*)
-        `
-        )
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching swaps:", error.message);
-      } else {
-        // Asegurar formato consistente
-        const formatted = data.map((s: any) => ({
-          ...s,
-          sender: s.sender || null,
-          receiver: s.receiver || null,
-          senderPlant: s.senderPlant || null,
-          receiverPlant: s.receiverPlant || null,
-        }));
-        setSwaps(formatted);
-      }
-
-      setLoading(false);
-    };
-
-    fetchSwaps();
-  }, []);
 
   const toggleStatus = (s: SwapStatus) =>
     setActiveStatuses((prev) =>
@@ -90,7 +43,6 @@ export default function SwapsPage() {
     }
   };
 
-  // 🔍 Filtrar + ordenar
   const filtered = swaps.filter(
     (s) =>
       activeStatuses.length === 0 ||
@@ -105,19 +57,17 @@ export default function SwapsPage() {
     }
     return 0;
   });
-
-  const { page, totalPages, paginated, goToPage } = usePagination(sorted, 5);
-
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-    });
-
+  const ITEMS_PER_PAGE = 5;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE);
+  const paginated = sorted.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
   if (loading) {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        Cargando swaps...
+        <Spinner className="w-6 h-6 mb-2" />
       </div>
     );
   }
@@ -135,7 +85,7 @@ export default function SwapsPage() {
         </CardHeader>
       </Card>
 
-      {/* 🔘 Filtros compactos */}
+      {/* 🔘 Filters */}
       <div className="flex flex-wrap gap-2 mb-4">
         {(["pending", "accepted", "rejected", "completed"] as SwapStatus[]).map(
           (s) => (
@@ -155,23 +105,24 @@ export default function SwapsPage() {
         )}
       </div>
 
-      {/* 🧾 Tabla */}
+      {/* 🧾 Table */}
+
       <PaginatedTable
         data={paginated}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        page={page}
         columns={[
           {
             key: "senderPlant",
             header: "Your Plant",
-            render: (swap: FullSwap) => (
+            render: (swap: any) => (
               <div className="flex items-center gap-3">
                 <img
                   src={swap.senderPlant?.image_url || "/imagenotfound.jpeg"}
                   alt={swap.senderPlant?.nombre_comun}
-                  className="w-10 h-10 rounded-lg object-cover cursor-pointer transition-transform hover:scale-105"
-                  onClick={() =>
-                    swap.senderPlant?.id &&
-                    setSelectedPlantId(swap.senderPlant.id)
-                  }
+                  className="w-10 h-10 rounded-lg object-cover cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => setSelectedPlantId(swap.senderPlant?.id)}
                 />
                 <span>{swap.senderPlant?.nombre_comun}</span>
               </div>
@@ -180,16 +131,13 @@ export default function SwapsPage() {
           {
             key: "receiverPlant",
             header: "Other Plant",
-            render: (swap: FullSwap) => (
+            render: (swap: any) => (
               <div className="flex items-center gap-3">
                 <img
                   src={swap.receiverPlant?.image_url || "/imagenotfound.jpeg"}
                   alt={swap.receiverPlant?.nombre_comun}
-                  className="w-10 h-10 rounded-lg object-cover cursor-pointer transition-transform hover:scale-105"
-                  onClick={() =>
-                    swap.receiverPlant?.id &&
-                    setSelectedPlantId(swap.receiverPlant.id)
-                  }
+                  className="w-10 h-10 rounded-lg object-cover cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => setSelectedPlantId(swap.receiverPlant?.id)}
                 />
                 <span>{swap.receiverPlant?.nombre_comun}</span>
               </div>
@@ -206,13 +154,13 @@ export default function SwapsPage() {
                 User <ArrowUpDown className="w-4 h-4 ml-1" />
               </button>
             ) as unknown as string,
-            render: (swap: FullSwap) => (
+            render: (swap: any) => (
               <div className="flex items-center gap-2">
                 <img
                   src={swap.receiver?.avatar_url || "/avatar-placeholder.png"}
                   alt={swap.receiver?.username ?? "User"}
-                  className="w-8 h-8 rounded-full object-cover cursor-pointer transition-transform hover:scale-105"
-                  onClick={() => setSelectedUserId(swap.receiver?.id || null)}
+                  className="w-8 h-8 rounded-full object-cover cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => setSelectedUserId(swap.receiver?.id)}
                 />
                 <span className="hidden sm:inline">
                   @{swap.receiver?.username}
@@ -221,47 +169,25 @@ export default function SwapsPage() {
             ),
           },
           {
-            key: "created_at",
-            header: (
-              <button
-                type="button"
-                className="flex items-center cursor-pointer"
-                onClick={() => handleSort("created_at")}
-              >
-                Date <ArrowUpDown className="w-4 h-4 ml-1" />
-              </button>
-            ) as unknown as string,
-            render: (swap: FullSwap) => (
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                {formatDate(swap.created_at || "")}
-              </span>
-            ),
-          },
-          {
             key: "actions",
             header: "Actions",
-            render: (swap: FullSwap) => (
-              <div className="flex justify-end gap-2">
-                {swap.status === "pending" ? (
-                  <>
-                    <Button size="sm" title="Accept">
-                      <Check />
-                    </Button>
-                    <Button size="sm" variant="destructive" title="Reject">
-                      <X />
-                    </Button>
-                  </>
-                ) : null}
-              </div>
+            render: (swap: any) => (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setSelectedSwap(swap);
+                  setOpenSwapInfo(true);
+                }}
+              >
+                View
+              </Button>
             ),
           },
         ]}
-        page={page}
-        totalPages={totalPages}
-        onPageChange={goToPage}
       />
 
-      {/* 🌿 Modales */}
+      {/* 🌱 Modales */}
       <PlantDetailsModal
         open={!!selectedPlantId}
         onOpenChange={(open) => !open && setSelectedPlantId(null)}
@@ -272,6 +198,15 @@ export default function SwapsPage() {
         open={!!selectedUserId}
         onOpenChange={(open) => !open && setSelectedUserId(null)}
         userId={selectedUserId}
+      />
+
+      <SwapInfoModal
+        open={openSwapInfo}
+        onOpenChange={setOpenSwapInfo}
+        swap={selectedSwap}
+        userId={userId || ""}
+        onStatusChange={reload}
+        username={username || ""}
       />
     </>
   );

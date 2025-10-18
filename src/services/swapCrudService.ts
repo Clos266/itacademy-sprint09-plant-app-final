@@ -7,9 +7,7 @@ export type Swap = Database["public"]["Tables"]["swaps"]["Row"];
 export type SwapInsert = Omit<
   Swap,
   "id" | "created_at" | "updated_at" | "status"
-> & {
-  status?: Swap["status"]; // por si quieres setearlo tú (default: pending)
-};
+> & { status?: Swap["status"] };
 export type SwapUpdate = Partial<Swap>;
 export type SwapPoint = Database["public"]["Tables"]["swap_points"]["Row"];
 
@@ -17,18 +15,53 @@ const TABLE = "swaps" as const;
 const MSG_TABLE = "swap_messages" as const;
 const POINTS_TABLE = "swap_points" as const;
 
-/**
- * ➕ Crear propuesta de intercambio
- * - Inserta en `swaps`
- * - Si hay `initialMessage`, crea un mensaje en `swap_messages`
- */
+/* ============================================================
+ 🌿 FETCH SWAPS CON RELACIONES
+============================================================ */
+export async function fetchSwapsWithRelations(userId?: string) {
+  let query = supabase
+    .from(TABLE)
+    .select(
+      `
+      *,
+      sender:sender_id(*),
+      receiver:receiver_id(*),
+      senderPlant:sender_plant_id(*),
+      receiverPlant:receiver_plant_id(*)
+    `
+    )
+    .order("created_at", { ascending: false });
+
+  if (userId) {
+    query = query.or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error fetching swaps with relations:", error.message);
+    throw new Error(error.message);
+  }
+
+  return (data || []).map((s: any) => ({
+    ...s,
+    sender: s.sender || null,
+    receiver: s.receiver || null,
+    senderPlant: s.senderPlant || null,
+    receiverPlant: s.receiverPlant || null,
+  }));
+}
+
+/* ============================================================
+ ➕ CREAR PROPUESTA DE SWAP
+============================================================ */
 export async function addSwapProposal(params: {
   sender_id: string;
   receiver_id: string;
   sender_plant_id: number;
   receiver_plant_id: number;
   swap_point_id?: number | null;
-  status?: Swap["status"]; // default: 'pending'
+  status?: Swap["status"];
   initialMessage?: string;
 }) {
   const {
@@ -59,39 +92,21 @@ export async function addSwapProposal(params: {
     throw new Error(error.message);
   }
 
-  // Mensaje inicial (opcional) -> swap_messages
   if (initialMessage?.trim()) {
-    const { error: msgError } = await supabase.from(MSG_TABLE).insert({
+    await supabase.from(MSG_TABLE).insert({
       swap_id: data.id,
       sender_id,
       message: initialMessage.trim(),
     });
-    if (msgError) {
-      // No rompemos el flujo si el mensaje falla; solo avisamos en consola
-      console.warn("swap_messages insert failed:", msgError.message);
-    }
   }
 
   showSuccess("Swap proposal sent!");
   return data;
 }
 
-/**
- * 🔍 Traer swaps del usuario (enviados o recibidos)
- * Tip: si quieres relaciones para UI, amplía el select con joins.
- */
-export async function fetchUserSwaps(userId: string) {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select("*")
-    .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return data ?? [];
-}
-
-/** 🟢 Aceptar */
+/* ============================================================
+ 🔄 ACTUALIZAR ESTADOS
+============================================================ */
 export async function acceptSwap(id: number) {
   const { data, error } = await supabase
     .from(TABLE)
@@ -104,7 +119,6 @@ export async function acceptSwap(id: number) {
   return data;
 }
 
-/** 🔴 Rechazar */
 export async function rejectSwap(id: number) {
   const { data, error } = await supabase
     .from(TABLE)
@@ -117,7 +131,6 @@ export async function rejectSwap(id: number) {
   return data;
 }
 
-/** 🟣 Completar (cuando se concrete el intercambio) */
 export async function completeSwap(id: number) {
   const { data, error } = await supabase
     .from(TABLE)
@@ -130,24 +143,21 @@ export async function completeSwap(id: number) {
   return data;
 }
 
-/** ❌ Cancelar / eliminar */
 export async function deleteSwap(id: number) {
   const { error } = await supabase.from(TABLE).delete().eq("id", id);
   if (error) throw new Error(error.message);
   showSuccess("Swap cancelled.");
 }
 
-/** 🔁 Realtime swaps del usuario (enviados o recibidos) */
+/* ============================================================
+ ⚡ SUSCRIPCIÓN REALTIME
+============================================================ */
 export function subscribeToUserSwaps(
   userId: string,
   onChange: (payload: RealtimePostgresChangesPayload<Swap>) => void
 ) {
-  if (!userId) {
-    console.warn("subscribeToUserSwaps: missing userId");
-    return () => {};
-  }
+  if (!userId) return () => {};
 
-  // Nota: postgres_changes no permite OR en filter -> escuchamos todos y filtramos en callback
   const channel = supabase
     .channel(`swaps-user-${userId}`)
     .on(
@@ -166,7 +176,9 @@ export function subscribeToUserSwaps(
   return () => supabase.removeChannel(channel);
 }
 
-/** 📍 Puntos de intercambio */
+/* ============================================================
+ 📍 PUNTOS DE INTERCAMBIO
+============================================================ */
 export async function fetchSwapPoints(): Promise<SwapPoint[]> {
   const { data, error } = await supabase
     .from(POINTS_TABLE)
