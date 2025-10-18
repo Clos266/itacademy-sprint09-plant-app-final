@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ModalDialog } from "@/components/modals/ModalDialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -9,19 +9,21 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { Plant } from "@/data/mockPlants";
+import { Spinner } from "@/components/ui/spinner";
+import { showError, showSuccess } from "@/services/toastService";
+import { addSwapProposal } from "@/services/swapCrudService";
+import { getCurrentUser } from "@/services/authService";
+import { fetchSwapPoints } from "@/services/swapPointsCrudService";
+import type { Database } from "@/types/supabase";
+
+type Plant = Database["public"]["Tables"]["plants"]["Row"];
+type SwapPoint = Database["public"]["Tables"]["swap_points"]["Row"];
 
 interface ProposeSwapModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  targetPlant: Plant | null; // Planta del otro usuario
-  userPlants: Plant[]; // Tus plantas disponibles
-  onConfirm: (proposal: {
-    offeredPlantId: number;
-    targetPlantId: number;
-    swapPointId?: number | null;
-    message?: string;
-  }) => void;
+  targetPlant: Plant | null;
+  userPlants: Plant[];
 }
 
 export function ProposeSwapModal({
@@ -29,28 +31,56 @@ export function ProposeSwapModal({
   onOpenChange,
   targetPlant,
   userPlants,
-  onConfirm,
 }: ProposeSwapModalProps) {
   const [offeredPlantId, setOfferedPlantId] = useState<number | null>(null);
   const [swapPointId, setSwapPointId] = useState<number | null>(null);
+  const [swapPoints, setSwapPoints] = useState<SwapPoint[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingPoints, setLoadingPoints] = useState(true);
 
-  const handleSubmit = () => {
-    if (!targetPlant || !offeredPlantId) return;
-    setLoading(true);
+  // 🔹 Fetch swap points al abrir el modal
+  useEffect(() => {
+    if (open) {
+      const loadPoints = async () => {
+        setLoadingPoints(true);
+        const points = await fetchSwapPoints();
+        setSwapPoints(points);
+        setLoadingPoints(false);
+      };
+      loadPoints();
+    }
+  }, [open]);
 
-    // 🔹 Simula una llamada a la base de datos
-    setTimeout(() => {
-      onConfirm({
-        offeredPlantId,
-        targetPlantId: targetPlant.id,
-        swapPointId,
-        message,
+  const handleSubmit = async () => {
+    if (!targetPlant || !offeredPlantId) {
+      showError("Please select one of your plants to offer.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const user = await getCurrentUser();
+      if (!user) throw new Error("No active session");
+
+      await addSwapProposal({
+        sender_id: user.id,
+        receiver_id: targetPlant.user_id!,
+        sender_plant_id: offeredPlantId,
+        receiver_plant_id: targetPlant.id,
+        swap_point_id: swapPointId ?? null,
+        status: "pending",
+        initialMessage: message,
       });
-      setLoading(false);
+
+      showSuccess("Swap proposal sent!");
       onOpenChange(false);
-    }, 1000);
+    } catch (err: any) {
+      console.error("Error sending proposal:", err);
+      showError(err.message || "Failed to send proposal.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -79,41 +109,61 @@ export function ProposeSwapModal({
             <Select
               onValueChange={(val) => setOfferedPlantId(Number(val))}
               value={offeredPlantId ? String(offeredPlantId) : ""}
+              disabled={loading}
             >
               <SelectTrigger className="w-full mt-1">
                 <SelectValue placeholder="Select one of your plants..." />
               </SelectTrigger>
               <SelectContent>
-                {userPlants
-                  .filter((p) => p.disponible)
-                  .map((plant) => (
+                {userPlants.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    You have no available plants for swap
+                  </SelectItem>
+                ) : (
+                  userPlants.map((plant) => (
                     <SelectItem key={plant.id} value={String(plant.id)}>
                       {plant.nombre_comun}
                     </SelectItem>
-                  ))}
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
 
-          {/* 🗺️ Optional swap point */}
+          {/* 🗺️ Swap point (optional) */}
           <div>
             <Label>Swap point (optional)</Label>
-            <Select
-              onValueChange={(val) => setSwapPointId(Number(val))}
-              value={swapPointId ? String(swapPointId) : ""}
-            >
-              <SelectTrigger className="w-full mt-1">
-                <SelectValue placeholder="Choose a meeting point..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Community Garden</SelectItem>
-                <SelectItem value="2">Local Market</SelectItem>
-                <SelectItem value="3">Botanical Park</SelectItem>
-              </SelectContent>
-            </Select>
+            {loadingPoints ? (
+              <div className="flex justify-center py-4">
+                <Spinner className="text-primary" />
+              </div>
+            ) : (
+              <Select
+                onValueChange={(val) => setSwapPointId(Number(val))}
+                value={swapPointId ? String(swapPointId) : ""}
+                disabled={loading}
+              >
+                <SelectTrigger className="w-full mt-1">
+                  <SelectValue placeholder="Choose a meeting point..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {swapPoints.length > 0 ? (
+                    swapPoints.map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        {p.name} — {p.city}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>
+                      No swap points available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
-          {/* 💬 Optional message */}
+          {/* 💬 Message */}
           <div>
             <Label>Message (optional)</Label>
             <Textarea
@@ -121,6 +171,7 @@ export function ProposeSwapModal({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="mt-1"
+              disabled={loading}
             />
           </div>
         </div>

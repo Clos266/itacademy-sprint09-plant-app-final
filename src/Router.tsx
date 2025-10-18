@@ -7,6 +7,7 @@ import SignupPage from "./pages/Signup";
 import PlantPage from "./pages/Plants";
 import HomePage from "./pages/Home";
 import SwapsPage from "./pages/Swaps";
+import CreateProfilePage from "./pages/CreateProfilePage";
 
 export default function Router() {
   return (
@@ -17,10 +18,12 @@ export default function Router() {
         <Route path="swaps" element={<SwapsPage />} />
         <Route path="plants" element={<PlantPage />} />
 
-        <Route path="pages"></Route>
+        {/* 🔐 Autenticación */}
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<SignupPage />} />
+        <Route path="create-profile" element={<CreateProfilePage />} />
 
+        {/* ❌ Fallback */}
         <Route path="*" element={<NotMatch />} />
       </Route>
     </Routes>

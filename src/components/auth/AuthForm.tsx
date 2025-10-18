@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { supabase } from "@/services/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,7 +10,6 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
 import {
   Form,
   FormField,
@@ -20,8 +18,13 @@ import {
   FormMessage,
   FormControl,
 } from "@/components/ui/form";
+import { useNavigate } from "react-router-dom";
+import { signIn, signUp } from "@/services/authService";
+import { showError, showSuccess } from "@/services/toastService";
+import { supabase } from "@/services/supabaseClient";
+import { Spinner } from "@/components/ui/spinner"; // ✅ importado
 
-// ✅ Validation schema
+// ✅ Schema de validación
 const authSchema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(6, "Password must be at least 6 characters long"),
@@ -50,38 +53,37 @@ export function AuthForm({ mode }: AuthFormProps) {
   const onSubmit = async (data: AuthFormData) => {
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: data.password,
-        });
-        if (error) throw error;
-
-        // Pequeña pausa para que la sesión se guarde antes de navegar
-        await new Promise((r) => setTimeout(r, 400));
-        navigate("/");
+        await signIn(data.email, data.password);
+        showSuccess("Welcome back!");
+        navigate("/plants");
       } else {
         const { error } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
         });
+
         if (error) throw error;
-        alert("✅ Account created! Check your email to confirm your account.");
-        navigate("/login");
+
+        showSuccess("Account created! Let's set up your profile 🌿");
+
+        // 👇 Forzar recarga completa para asegurar sesión válida
+        setTimeout(() => {
+          window.location.href = "/create-profile";
+        }, 500);
       }
     } catch (err: any) {
       console.error("Auth error:", err);
-      form.setError("password", {
-        message:
-          err?.message ||
+      showError(
+        err?.message ||
           (mode === "login"
-            ? "Invalid credentials"
-            : "Could not create account"),
-      });
+            ? "Invalid credentials."
+            : "Could not create account.")
+      );
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30">
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <Card className="w-full max-w-sm shadow-md">
         <CardHeader>
           <CardTitle className="text-2xl font-semibold text-center">
@@ -89,8 +91,8 @@ export function AuthForm({ mode }: AuthFormProps) {
           </CardTitle>
           <CardDescription className="text-center">
             {mode === "login"
-              ? "Log in to manage your plants "
-              : "Join our plant swap community "}
+              ? "Log in to manage your plants"
+              : "Join our plant swap community"}
           </CardDescription>
         </CardHeader>
 
@@ -104,7 +106,11 @@ export function AuthForm({ mode }: AuthFormProps) {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="you@example.com" {...field} />
+                      <Input
+                        placeholder="you@example.com"
+                        type="email"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -129,12 +135,21 @@ export function AuthForm({ mode }: AuthFormProps) {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting
-                  ? "Loading..."
-                  : mode === "login"
-                  ? "Sign In"
-                  : "Sign Up"}
+              <Button
+                type="submit"
+                className="w-full flex justify-center items-center gap-2"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Spinner className="text-primary-foreground" />{" "}
+                    <span>Loading...</span>
+                  </>
+                ) : mode === "login" ? (
+                  "Sign In"
+                ) : (
+                  "Sign Up"
+                )}
               </Button>
             </form>
           </Form>
@@ -166,11 +181,12 @@ export function AuthForm({ mode }: AuthFormProps) {
             onClick={() =>
               supabase.auth.signInWithOAuth({ provider: "google" })
             }
+            disabled={isSubmitting}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 48 48"
-              className="w-5 h-5"
+              className="w-5 h-5 mr-2"
             >
               <path
                 fill="#EA4335"
@@ -189,7 +205,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 d="M9.33 28.98C8.83 27.48 8.56 25.8 8.56 24s.27-3.48.77-4.98l-7-5.4C.86 17.2 0 20.5 0 24c0 3.5.86 6.8 2.33 9.78l7-5.4z"
               />
             </svg>
-            <span>Continue with Google</span>
+            Continue with Google
           </Button>
 
           <Button
@@ -198,17 +214,17 @@ export function AuthForm({ mode }: AuthFormProps) {
             onClick={() =>
               supabase.auth.signInWithOAuth({ provider: "github" })
             }
-            className="flex items-center justify-center gap-2"
+            disabled={isSubmitting}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
-              className="w-5 h-5"
+              className="w-5 h-5 mr-2"
             >
               <path d="M12 0a12 12 0 0 0-3.79 23.4c.6.11.82-.26.82-.58v-2.17c-3.34.73-4.04-1.61-4.04-1.61a3.18 3.18 0 0 0-1.34-1.76c-1.1-.76.09-.75.09-.75a2.52 2.52 0 0 1 1.83 1.23 2.56 2.56 0 0 0 3.51 1 2.56 2.56 0 0 1 .76-1.6c-2.66-.3-5.46-1.33-5.46-5.9a4.63 4.63 0 0 1 1.23-3.21 4.3 4.3 0 0 1 .12-3.17s1-.32 3.3 1.23a11.4 11.4 0 0 1 6 0C16.9 4.5 17.9 4.82 17.9 4.82a4.3 4.3 0 0 1 .12 3.17 4.63 4.63 0 0 1 1.23 3.21c0 4.58-2.8 5.59-5.47 5.89a2.9 2.9 0 0 1 .83 2.24v3.32c0 .32.21.7.83.58A12 12 0 0 0 12 0z" />
             </svg>
-            <span>Continue with GitHub</span>
+            Continue with GitHub
           </Button>
         </div>
       </Card>

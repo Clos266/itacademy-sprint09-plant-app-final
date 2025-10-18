@@ -4,7 +4,9 @@ import { supabase } from "./supabaseClient";
 export async function signUp(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw error;
-  return data;
+
+  // Devuelve el usuario creado para redirigir a /create-profile
+  return data.user;
 }
 
 // 🟡 Iniciar sesión
@@ -14,7 +16,7 @@ export async function signIn(email: string, password: string) {
     password,
   });
   if (error) throw error;
-  return data;
+  return data.user;
 }
 
 // 🔵 Cerrar sesión
