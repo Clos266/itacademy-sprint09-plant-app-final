@@ -190,7 +190,7 @@ export async function fetchSwapPoints(): Promise<SwapPoint[]> {
 /** 🔁 Actualizar estado del swap y disponibilidad de plantas */
 export async function updateSwapStatusWithAvailability(
   swapId: number,
-  status: "accepted" | "rejected" | "pending",
+  status: "accepted" | "rejected" | "pending" | "completed",
   senderPlantId?: number,
   receiverPlantId?: number
 ) {
@@ -218,7 +218,93 @@ export async function updateSwapStatusWithAvailability(
       .in("id", [senderPlantId, receiverPlantId].filter(Boolean));
 
     if (revertError) throw revertError;
+  } else if (status === "completed") {
+    // 🌱 Liberar plantas al completar el intercambio
+    const { error: completeError } = await supabase
+      .from("plants")
+      .update({ disponible: true })
+      .in("id", [senderPlantId, receiverPlantId].filter(Boolean));
+
+    if (completeError) throw completeError;
   }
 
   return { success: true };
+}
+
+export async function markSwapAsCompletedByUser(
+  swapId: number,
+  userId: string
+) {
+  // 1️⃣ Obtener el swap actual con las plantas
+  const { data: swap, error: fetchError } = await supabase
+    .from("swaps")
+    .select(
+      `
+      id,
+      sender_id,
+      receiver_id,
+      sender_completed,
+      receiver_completed,
+      senderPlant:sender_plant_id(id, user_id),
+      receiverPlant:receiver_plant_id(id, user_id)
+      `
+    )
+    .eq("id", swapId)
+    .single();
+
+  if (fetchError || !swap) throw fetchError;
+
+  // ⚙️ Asegurar que las relaciones no sean arrays
+  const senderPlant = Array.isArray(swap.senderPlant)
+    ? swap.senderPlant[0]
+    : swap.senderPlant;
+  const receiverPlant = Array.isArray(swap.receiverPlant)
+    ? swap.receiverPlant[0]
+    : swap.receiverPlant;
+
+  // 2️⃣ Determinar si es sender o receiver
+  const isSender = swap.sender_id === userId;
+  const updateField = isSender ? "sender_completed" : "receiver_completed";
+
+  // 3️⃣ Actualizar su campo de completado
+  const { error: updateError } = await supabase
+    .from("swaps")
+    .update({ [updateField]: true })
+    .eq("id", swapId);
+
+  if (updateError) throw updateError;
+
+  // 4️⃣ Si ambos completaron → marcar el swap como completed + intercambiar dueños
+  if (
+    (isSender && swap.receiver_completed) ||
+    (!isSender && swap.sender_completed)
+  ) {
+    const { error: completeError } = await supabase
+      .from("swaps")
+      .update({ status: "completed" })
+      .eq("id", swapId);
+
+    if (completeError) throw completeError;
+
+    // 🪴 Intercambiar dueños de las plantas
+    if (senderPlant?.id && receiverPlant?.id) {
+      const updates = [
+        supabase
+          .from("plants")
+          .update({ user_id: swap.receiver_id, disponible: false })
+          .eq("id", senderPlant.id),
+        supabase
+          .from("plants")
+          .update({ user_id: swap.sender_id, disponible: false })
+          .eq("id", receiverPlant.id),
+      ];
+
+      const results = await Promise.all(updates);
+      const hasError = results.some((r) => r.error);
+
+      if (hasError) {
+        showError("Swap completed but plant ownership update failed");
+      }
+    }
+  }
 }

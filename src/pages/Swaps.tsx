@@ -172,16 +172,59 @@ export default function SwapsPage() {
             key: "actions",
             header: "Actions",
             render: (swap: any) => (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setSelectedSwap(swap);
-                  setOpenSwapInfo(true);
-                }}
-              >
-                View
-              </Button>
+              <div className="flex gap-2">
+                {/* 👁 View button */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedSwap(swap);
+                    setOpenSwapInfo(true);
+                  }}
+                >
+                  View
+                </Button>
+
+                {/* ✅ Mark as Completed */}
+                <Button
+                  size="sm"
+                  variant={
+                    swap.status === "completed" ? "outline" : "secondary"
+                  }
+                  disabled={swap.status !== "accepted"}
+                  onClick={async () => {
+                    try {
+                      const { markSwapAsCompletedByUser } = await import(
+                        "@/services/swapCrudService"
+                      );
+                      const { showSuccess } = await import(
+                        "@/services/toastService"
+                      );
+                      if (!userId) {
+                        const { showError } = await import(
+                          "@/services/toastService"
+                        );
+                        showError("User not logged in");
+                        return;
+                      }
+                      await markSwapAsCompletedByUser(swap.id, userId);
+
+                      showSuccess("Marked your side as completed ✅");
+                      reload();
+                    } catch (err) {
+                      console.error(err);
+                      const { showError } = await import(
+                        "@/services/toastService"
+                      );
+                      showError("Failed to update completion status");
+                    }
+                  }}
+                >
+                  {swap.status === "completed"
+                    ? "Completed ✅"
+                    : "Mark as Completed"}
+                </Button>
+              </div>
             ),
           },
         ]}
