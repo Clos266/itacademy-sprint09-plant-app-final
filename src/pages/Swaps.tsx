@@ -209,7 +209,7 @@ export default function SwapsPage() {
                       }
                       await markSwapAsCompletedByUser(swap.id, userId);
 
-                      showSuccess("Marked your side as completed ✅");
+                      showSuccess("Marked your side as completed ");
                       reload();
                     } catch (err) {
                       console.error(err);
@@ -221,7 +221,7 @@ export default function SwapsPage() {
                   }}
                 >
                   {swap.status === "completed"
-                    ? "Completed ✅"
+                    ? "Completed "
                     : "Mark as Completed"}
                 </Button>
               </div>
