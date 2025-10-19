@@ -19,7 +19,7 @@ import {
   FormControl,
 } from "@/components/ui/form";
 import { useNavigate } from "react-router-dom";
-import { signIn, signUp } from "@/services/authService";
+import { signIn } from "@/services/authService";
 import { showError, showSuccess } from "@/services/toastService";
 import { supabase } from "@/services/supabaseClient";
 import { Spinner } from "@/components/ui/spinner"; // ✅ importado
