@@ -187,3 +187,38 @@ export async function fetchSwapPoints(): Promise<SwapPoint[]> {
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+/** 🔁 Actualizar estado del swap y disponibilidad de plantas */
+export async function updateSwapStatusWithAvailability(
+  swapId: number,
+  status: "accepted" | "rejected" | "pending",
+  senderPlantId?: number,
+  receiverPlantId?: number
+) {
+  const { error: swapError } = await supabase
+    .from("swaps")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", swapId);
+
+  if (swapError) throw swapError;
+
+  // 🪴 Actualizar disponibilidad de plantas
+  if (status === "accepted" || status === "pending") {
+    // 🔒 Bloquear plantas
+    const { error: plantError } = await supabase
+      .from("plants")
+      .update({ disponible: false })
+      .in("id", [senderPlantId, receiverPlantId].filter(Boolean));
+
+    if (plantError) throw plantError;
+  } else if (status === "rejected") {
+    // 🔓 Revertir disponibilidad
+    const { error: revertError } = await supabase
+      .from("plants")
+      .update({ disponible: true })
+      .in("id", [senderPlantId, receiverPlantId].filter(Boolean));
+
+    if (revertError) throw revertError;
+  }
+
+  return { success: true };
+}

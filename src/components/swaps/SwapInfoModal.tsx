@@ -9,13 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SwapChat } from "@/components/swaps/SwapChat";
-import { supabase } from "@/services/supabaseClient";
 import { showError, showSuccess } from "@/services/toastService";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import type { Database } from "@/types/supabase";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { updateSwapStatusWithAvailability } from "@/services/swapCrudService";
 
 type Swap = Database["public"]["Tables"]["swaps"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -56,15 +56,15 @@ export function SwapInfoModal({
   const handleUpdateStatus = async (status: "accepted" | "rejected") => {
     try {
       setLoadingAction(true);
-      const { error } = await supabase
-        .from("swaps")
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq("id", swap.id);
 
-      if (error) throw error;
-      showSuccess(
-        `Swap ${status === "accepted" ? "accepted" : "rejected"} successfully`
+      await updateSwapStatusWithAvailability(
+        swap.id,
+        status,
+        swap.senderPlant?.id,
+        swap.receiverPlant?.id
       );
+
+      showSuccess(`Swap ${status} successfully`);
       onStatusChange?.();
       onOpenChange(false);
     } catch (err) {
@@ -78,15 +78,7 @@ export function SwapInfoModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="
-    max-w-xl w-[90%] sm:w-[600px]
-    max-h-[90vh]
-    overflow-y-auto
-    mx-auto
-    rounded-2xl
-    border
-    p-4
-  "
+        className="max-w-xl w-[90%] sm:w-[600px] max-h-[90vh] overflow-y-auto mx-auto rounded-2xl border p-4"
         style={{ overflow: "visible" }}
       >
         <ScrollArea className="max-h-[85vh] p-4">
@@ -129,7 +121,6 @@ export function SwapInfoModal({
                   />
                 </div>
               </div>
-
               <p className="mt-2 font-medium text-sm">
                 {swap.senderPlant?.nombre_comun}
               </p>
