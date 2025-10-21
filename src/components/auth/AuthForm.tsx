@@ -178,14 +178,16 @@ export function AuthForm({ mode }: AuthFormProps) {
           <Button
             variant="outline"
             type="button"
-            onClick={() =>
-              supabase.auth.signInWithOAuth({
+            onClick={async () => {
+              const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: "google",
                 options: {
-                  redirectTo: window.location.origin,
+                  redirectTo: `${window.location.origin}/auth/callback`, // redirección a una ruta intermedia
                 },
-              })
-            }
+              });
+
+              if (error) console.error("Google login error:", error);
+            }}
             disabled={isSubmitting}
           >
             <svg
