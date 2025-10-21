@@ -179,7 +179,12 @@ export function AuthForm({ mode }: AuthFormProps) {
             variant="outline"
             type="button"
             onClick={() =>
-              supabase.auth.signInWithOAuth({ provider: "google" })
+              supabase.auth.signInWithOAuth({
+                provider: "google",
+                options: {
+                  redirectTo: window.location.origin,
+                },
+              })
             }
             disabled={isSubmitting}
           >
