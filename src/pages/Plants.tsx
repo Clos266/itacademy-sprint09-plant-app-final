@@ -37,7 +37,7 @@ import {
   deletePlant,
   subscribeToUserPlants,
 } from "@/services/plantCrudService";
-import { showSuccess, showError } from "@/services/toastService";
+import { showSuccess, showError, showWarning } from "@/services/toastService";
 import { supabase } from "@/services/supabaseClient";
 
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
@@ -122,7 +122,7 @@ export default function MyPlantsPage() {
     try {
       await deletePlant(id);
       // no need to manually update state (realtime handles it)
-      showSuccess("Plant deleted!");
+      showWarning("Plant deleted!");
     } catch (err: any) {
       showError(err.message || "Error deleting plant.");
     }
