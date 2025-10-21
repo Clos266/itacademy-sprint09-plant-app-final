@@ -14,5 +14,16 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    build: {
+      outDir: "dist",
+    },
+    server: {
+      port: 5173, // o el que uses
+      open: true,
+      // Si necesitas proxy para llamadas al backend:
+      proxy: {
+        "/api": "http://localhost:3000",
+      },
+    },
   };
 });
