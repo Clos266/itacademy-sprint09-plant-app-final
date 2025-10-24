@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FilterBar } from "@/components/common/FilterBar";
 import { SearchInput } from "@/components/common/SearchInput";
 import { MapPin, CalendarDays } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner"; // ✅ spinner de shadcn
 import { NewEventButton } from "@/components/Events/NewEventModal";
 import { NewSwapPointButton } from "@/components/swappoints/NewSwapPointModal";
 import { fetchEvents } from "@/services/eventService";
@@ -42,7 +43,11 @@ export default function CommunityPage() {
           fetchEvents(),
           fetchSwapPoints(),
         ]);
-        setEvents(eventData);
+        // 👇 Ordena eventos (más recientes primero)
+        const sortedEvents = eventData.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        setEvents(sortedEvents);
         setSwappoints(swappointData);
       } finally {
         setLoading(false);
@@ -129,9 +134,10 @@ export default function CommunityPage() {
         {/* 🗓️ Eventos */}
         <TabsContent value="events">
           {loading ? (
-            <p className="text-center text-muted-foreground py-8">
-              Loading events...
-            </p>
+            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+              <Spinner className="w-6 h-6 mb-2" /> {/* ✅ spinner shadcn */}
+              <span>Loading events...</span>
+            </div>
           ) : (
             <EventGrid
               data={filteredEvents}
@@ -146,9 +152,10 @@ export default function CommunityPage() {
         {/* 📍 Swap Points */}
         <TabsContent value="swappoints">
           {loading ? (
-            <p className="text-center text-muted-foreground py-8">
-              Loading swap points...
-            </p>
+            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+              <Spinner className="w-6 h-6 mb-2" /> {/* ✅ spinner shadcn */}
+              <span>Loading swap points...</span>
+            </div>
           ) : (
             <SwappointGrid
               data={filteredSwappoints}

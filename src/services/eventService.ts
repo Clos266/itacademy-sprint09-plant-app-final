@@ -1,21 +1,24 @@
-// src/services/useEventsService.ts
 import { supabase } from "./supabaseClient";
 import type { Database } from "@/types/supabase";
 
 type Event = Database["public"]["Tables"]["events"]["Row"];
-type EventInsert = Omit<Event, "id">;
+type EventInsert = Omit<Event, "id" | "created_at">; // no insertes id ni created_at
 type EventUpdate = Partial<Event>;
 
 const TABLE = "events" as const;
 
-// 📅 Obtener todos los eventos
+// 📅 Obtener todos los eventos (ordenados del más reciente al más antiguo)
 export async function fetchEvents(): Promise<Event[]> {
   const { data, error } = await supabase
     .from(TABLE)
     .select("*")
-    .order("date", { ascending: true });
+    .order("date", { ascending: false }); // 👈 muestra primero los más recientes
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("Error fetching events:", error);
+    return [];
+  }
+
   return data ?? [];
 }
 
@@ -27,7 +30,11 @@ export async function addEvent(event: EventInsert): Promise<Event> {
     .select()
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("Error adding event:", error);
+    throw new Error(error.message);
+  }
+
   return data;
 }
 
@@ -43,12 +50,20 @@ export async function updateEvent(
     .select()
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("Error updating event:", error);
+    throw new Error(error.message);
+  }
+
   return data;
 }
 
 // ❌ Eliminar evento
 export async function deleteEvent(id: number): Promise<void> {
   const { error } = await supabase.from(TABLE).delete().eq("id", id);
-  if (error) throw new Error(error.message);
+
+  if (error) {
+    console.error("Error deleting event:", error);
+    throw new Error(error.message);
+  }
 }

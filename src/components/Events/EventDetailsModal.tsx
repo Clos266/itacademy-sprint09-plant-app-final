@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -13,17 +13,16 @@ import {
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, CalendarDays } from "lucide-react";
+import { CalendarDays, MapPin } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Database } from "@/types/supabase";
 import { supabase } from "@/services/supabaseClient";
+import type { Database } from "@/types/supabase";
 
-// 🗺️ Token Mapbox desde tus variables de entorno
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
-type Event = Database["public"]["Tables"]["events"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-type SwapPoint = Database["public"]["Tables"]["swap_points"]["Row"];
+type EventRow = Database["public"]["Tables"]["events"]["Row"];
+type SwapPointRow = Database["public"]["Tables"]["swap_points"]["Row"];
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 interface EventDetailsModalProps {
   open: boolean;
@@ -31,85 +30,135 @@ interface EventDetailsModalProps {
   eventId: number | null;
 }
 
+type EventWithJoins = EventRow & {
+  profiles?: ProfileRow | null; // organizer
+  swap_points?: Pick<
+    SwapPointRow,
+    "id" | "name" | "address" | "city" | "lat" | "lng" | "image_url"
+  > | null;
+};
+
 export function EventDetailsModal({
   open,
   onOpenChange,
   eventId,
 }: EventDetailsModalProps) {
-  const [event, setEvent] = useState<
-    | (Event & { profile?: Profile | null; swap_points?: SwapPoint | null })
-    | null
-  >(null);
+  const [event, setEvent] = useState<EventWithJoins | null>(null);
   const [loading, setLoading] = useState(true);
+
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<mapboxgl.Map | null>(null);
 
-  // 🔹 Cargar evento + organizador + punto de intercambio
+  // 🔹 Cargar evento + organizer + swap point
   useEffect(() => {
     if (!eventId || !open) return;
 
-    const loadEvent = async () => {
+    const load = async () => {
       setLoading(true);
       try {
         const { data, error } = await supabase
           .from("events")
-          .select("*, profiles(*), swap_points(*)")
+          .select(
+            `
+            *,
+            profiles(*),
+            swap_points:swap_point_id (
+              id, name, address, city, lat, lng, image_url
+            )
+          `
+          )
           .eq("id", eventId)
           .single();
 
         if (error) throw error;
-        setEvent(data);
+        setEvent(data as EventWithJoins);
       } catch (err) {
         console.error("Error loading event:", err);
+        setEvent(null);
       } finally {
         setLoading(false);
       }
     };
 
-    loadEvent();
+    load();
   }, [eventId, open]);
 
-  // 🗺️ Inicializar mapa si el evento tiene swap_point
+  // 🗺️ Inicializar mapa (si hay swap point con coords)
   useEffect(() => {
-    if (!event?.swap_points || !open || !mapContainerRef.current) return;
+    const sp = event?.swap_points;
+    const canShowMap =
+      !!sp && typeof sp.lat === "number" && typeof sp.lng === "number";
 
-    const point = event.swap_points;
-
-    if (mapInstance.current) {
-      mapInstance.current.remove();
-      mapInstance.current = null;
+    if (!open || !mapContainerRef.current || !canShowMap) {
+      // Limpieza si no procede mostrar mapa
+      if (mapInstance.current) {
+        try {
+          mapInstance.current.remove();
+        } catch (e) {
+          console.warn("Map cleanup skipped:", e);
+        } finally {
+          mapInstance.current = null;
+        }
+      }
+      return;
     }
 
-    const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
-      center: [point.lng, point.lat],
-      zoom: 13,
+    // 💡 eliminar mapa previo por si reabres el modal
+    if (mapInstance.current) {
+      try {
+        mapInstance.current.remove();
+      } catch (e) {
+        console.warn("Map cleanup (pre-init) skipped:", e);
+      } finally {
+        mapInstance.current = null;
+      }
+    }
+
+    // Asegura render del contenedor antes de instanciar
+    const raf = requestAnimationFrame(() => {
+      if (!mapContainerRef.current) return;
+
+      const map = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: "mapbox://styles/mapbox/streets-v12",
+        center: [sp!.lng, sp!.lat],
+        zoom: 13,
+      });
+
+      new mapboxgl.Marker({ color: "#16a34a" })
+        .setLngLat([sp!.lng, sp!.lat])
+        .addTo(map);
+
+      mapInstance.current = map;
     });
 
-    new mapboxgl.Marker({ color: "#16a34a" })
-      .setLngLat([point.lng, point.lat])
-      .addTo(map);
-
-    mapInstance.current = map;
-
-    return () => map.remove();
-  }, [event, open]);
+    // ✅ cleanup robusto
+    return () => {
+      cancelAnimationFrame(raf);
+      if (mapInstance.current) {
+        try {
+          mapInstance.current.remove();
+        } catch (e) {
+          console.warn("Map cleanup failed:", e);
+        } finally {
+          mapInstance.current = null;
+        }
+      }
+    };
+  }, [open, event?.swap_points?.lat, event?.swap_points?.lng]);
 
   if (!open || !eventId) return null;
 
+  const isUpcoming = event?.date ? new Date(event.date) > new Date() : false;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-w-xl w-[90%] sm:w-[600px] max-h-[90vh] overflow-hidden mx-auto rounded-2xl border p-0"
-        style={{ overflow: "visible" }}
-      >
-        {/* ♿️ Accesibilidad */}
+      <DialogContent className="max-w-xl w-[90%] sm:w-[600px] max-h-[90vh] overflow-hidden mx-auto rounded-2xl border p-0">
+        {/* ♿️ Título/desc accesibles para lectores de pantalla */}
         <VisuallyHidden>
           <DialogTitle>Event Details</DialogTitle>
           <DialogDescription>
-            Detailed information about the selected event, including its swap
-            point and organizer.
+            Detailed information about this event and its location.
           </DialogDescription>
         </VisuallyHidden>
 
@@ -124,23 +173,26 @@ export function EventDetailsModal({
             </div>
           ) : (
             <>
-              {/* 🪴 Header */}
+              {/* Header */}
               <DialogHeader className="flex flex-col items-center mb-4">
-                <DialogTitle>{event.title}</DialogTitle>
+                <DialogTitle className="text-center">{event.title}</DialogTitle>
                 <DialogDescription className="text-center">
                   {event.description || "No description available."}
                 </DialogDescription>
-                <Badge
-                  className="mt-2"
-                  variant={
-                    new Date(event.date) > new Date() ? "default" : "secondary"
-                  }
-                >
-                  {new Date(event.date) > new Date() ? "Upcoming" : "Past"}
-                </Badge>
+                <div className="mt-2 flex items-center gap-2">
+                  <Badge variant={isUpcoming ? "default" : "secondary"}>
+                    {isUpcoming ? "Upcoming" : "Past"}
+                  </Badge>
+                  <span className="flex items-center text-sm text-muted-foreground">
+                    <CalendarDays className="w-4 h-4 mr-1" />
+                    {event.date
+                      ? new Date(event.date).toLocaleDateString()
+                      : "—"}
+                  </span>
+                </div>
               </DialogHeader>
 
-              {/* 🖼️ Imagen */}
+              {/* Imagen del evento */}
               <div className="relative mx-auto aspect-square w-full max-w-[220px] rounded-xl overflow-hidden border border-border bg-muted">
                 <img
                   src={event.image_url || "/imagenotfound.jpeg"}
@@ -149,69 +201,67 @@ export function EventDetailsModal({
                 />
               </div>
 
-              {/* 📍 Info principal */}
+              {/* Organizer + ubicación textual */}
               <div className="mt-4 text-sm text-muted-foreground space-y-2">
+                {event.profiles && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+                    <img
+                      src={
+                        event.profiles.avatar_url || "/avatar-placeholder.png"
+                      }
+                      alt={event.profiles.username || "User"}
+                      className="w-9 h-9 rounded-full object-cover border border-border"
+                    />
+                    <div className="flex flex-col leading-tight">
+                      <span className="font-medium text-foreground">
+                        @{event.profiles.username || "user"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <p className="flex items-center">
-                  <CalendarDays className="w-4 h-4 mr-1 text-primary" />
-                  {new Date(event.date).toLocaleDateString()}
+                  <MapPin className="w-4 h-4 mr-1 text-primary" />
+                  {event.location}
                 </p>
 
-                {event.swap_points ? (
-                  <>
-                    <p className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-1 text-primary" />
-                      {event.swap_points.name} — {event.swap_points.address},{" "}
-                      {event.swap_points.city}
-                    </p>
-                    <p>
-                      <strong>Coordinates:</strong>{" "}
-                      {event.swap_points.lat.toFixed(4)},{" "}
-                      {event.swap_points.lng.toFixed(4)}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-muted-foreground italic">
-                    No swap point assigned to this event.
+                {event.swap_points && (
+                  <p className="text-xs">
+                    <strong>Swap point:</strong> {event.swap_points.name} —{" "}
+                    {event.swap_points.address}, {event.swap_points.city}
                   </p>
                 )}
               </div>
 
-              {/* 🗺️ Mapa si hay punto */}
-              {event.swap_points && (
-                <div
-                  ref={mapContainerRef}
-                  className="w-full h-56 sm:h-64 mt-4 rounded-lg border border-border overflow-hidden"
-                />
-              )}
-
-              {/* 👤 Organizer */}
-              {event.profile && (
-                <div className="flex items-center gap-3 p-3 mt-4 rounded-lg bg-muted/50 border border-border">
-                  <img
-                    src={event.profile.avatar_url || "/avatar-placeholder.png"}
-                    alt={event.profile.username || "User"}
-                    className="w-9 h-9 rounded-full object-cover border border-border"
+              {/* Mapa (si hay swap point con coords) */}
+              {event.swap_points &&
+                typeof event.swap_points.lat === "number" &&
+                typeof event.swap_points.lng === "number" && (
+                  <div
+                    ref={mapContainerRef}
+                    className="w-full h-56 sm:h-64 mt-4 rounded-lg border border-border overflow-hidden"
                   />
-                  <div className="flex flex-col leading-tight">
-                    <span className="font-medium text-foreground">
-                      @{event.profile.username || "user"}
-                    </span>
-                    {event.profile.ciudad && (
-                      <span className="text-xs text-muted-foreground flex items-center">
-                        <MapPin className="w-3 h-3 mr-1" />
-                        {event.profile.ciudad}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* 🔘 Actions */}
+              {/* Actions */}
               <DialogFooter className="flex justify-end gap-2 pt-4">
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                   Close
                 </Button>
-                <Button>Join Event</Button>
+                {event.swap_points && (
+                  <Button
+                    onClick={() =>
+                      window.open(
+                        `https://www.google.com/maps?q=${
+                          event.swap_points!.lat
+                        },${event.swap_points!.lng}`,
+                        "_blank"
+                      )
+                    }
+                  >
+                    Open in Maps
+                  </Button>
+                )}
               </DialogFooter>
             </>
           )}
