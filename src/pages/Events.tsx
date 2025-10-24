@@ -3,38 +3,47 @@ import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, MapPin, Filter } from "lucide-react";
-import { NewEventButton } from "@/components/Events/NewEventModal";
-
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FilterBar } from "@/components/common/FilterBar";
 import { SearchInput } from "@/components/common/SearchInput";
+import { MapPin, CalendarDays } from "lucide-react";
+import { NewEventButton } from "@/components/Events/NewEventModal";
+import { NewSwapPointButton } from "@/components/swappoints/NewSwapPointModal";
 import { fetchEvents } from "@/services/eventService";
-import { fetchUsers } from "@/services/userService";
-import type { Event } from "@/types/supabase";
-import type { Profile } from "@/types/supabase";
+import { fetchSwapPoints } from "@/services/swapPointsCrudService";
+import { EventDetailsModal } from "@/components/Events/EventDetailsModal";
+import { SwapPointDetailsModal } from "@/components/swappoints/SwapPointDetailsModal";
+import type { Event, SwapPoint } from "@/types/supabase";
 
-export default function EventsPage() {
+export default function CommunityPage() {
+  const [activeTab, setActiveTab] = useState<"events" | "swappoints">("events");
   const [events, setEvents] = useState<Event[]>([]);
-  const [users, setUsers] = useState<Profile[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const [swappoints, setSwappoints] = useState<SwapPoint[]>([]);
+  const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"all" | "upcoming" | "past">(
     "all"
   );
-  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // 🔹 Cargar eventos y usuarios desde Supabase
+  // 🔹 Modales
+  const [openEventModal, setOpenEventModal] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+  const [openSwapPointModal, setOpenSwapPointModal] = useState(false);
+  const [selectedSwapPointId, setSelectedSwapPointId] = useState<number | null>(
+    null
+  );
+
+  // 🔹 Cargar eventos y puntos
   useEffect(() => {
     const loadData = async () => {
+      setLoading(true);
       try {
-        const [eventData, userData] = await Promise.all([
+        const [eventData, swappointData] = await Promise.all([
           fetchEvents(),
-          fetchUsers(),
+          fetchSwapPoints(),
         ]);
         setEvents(eventData);
-        setUsers(userData);
-      } catch (err) {
-        console.error("Error al cargar eventos o usuarios:", err);
+        setSwappoints(swappointData);
       } finally {
         setLoading(false);
       }
@@ -42,38 +51,28 @@ export default function EventsPage() {
     loadData();
   }, []);
 
-  // 🔍 Filtrado + búsqueda
+  // 🔍 Filtrado
   const filteredEvents = events.filter((event) => {
     const isUpcoming = new Date(event.date) > new Date();
     const matchesSearch =
       event.title.toLowerCase().includes(search.toLowerCase()) ||
-      event.description?.toLowerCase().includes(search.toLowerCase()) ||
       event.location.toLowerCase().includes(search.toLowerCase());
-
     if (!matchesSearch) return false;
     if (filterType === "upcoming") return isUpcoming;
     if (filterType === "past") return !isUpcoming;
     return true;
   });
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <p className="text-muted-foreground">Cargando eventos...</p>
-      </div>
-    );
-  }
+  const filteredSwappoints = swappoints.filter((point) =>
+    point.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen space-y-6">
       <PageHeader>
-        <PageHeaderHeading>
-          <CalendarDays className="inline-block w-6 h-6 mr-2 text-primary" />
-          Community Events
-        </PageHeaderHeading>
+        <PageHeaderHeading>Community</PageHeaderHeading>
       </PageHeader>
 
-      {/* 🔍 Filtros + búsqueda */}
       <Card>
         <CardContent>
           <FilterBar
@@ -81,133 +80,225 @@ export default function EventsPage() {
               <SearchInput
                 value={search}
                 onChange={setSearch}
-                onClear={() => setSearch("")}
-                placeholder="Search events..."
+                placeholder={`Search ${activeTab}...`}
               />
             }
             filters={
               <>
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <Button
-                  variant={filterType === "all" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("all")}
-                >
-                  All
-                </Button>
-                <Button
-                  variant={filterType === "upcoming" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("upcoming")}
-                >
-                  Upcoming
-                </Button>
-                <Button
-                  variant={filterType === "past" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilterType("past")}
-                >
-                  Past
-                </Button>
-                <NewEventButton />
+                {activeTab === "events" && (
+                  <>
+                    <Button
+                      variant={filterType === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFilterType("all")}
+                    >
+                      All
+                    </Button>
+                    <Button
+                      variant={
+                        filterType === "upcoming" ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setFilterType("upcoming")}
+                    >
+                      Upcoming
+                    </Button>
+                    <Button
+                      variant={filterType === "past" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFilterType("past")}
+                    >
+                      Past
+                    </Button>
+                    <NewEventButton />
+                  </>
+                )}
+                {activeTab === "swappoints" && <NewSwapPointButton />}
               </>
             }
           />
         </CardContent>
       </Card>
 
-      {/* 📅 Lista de eventos */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredEvents.map((event) => {
-          const isUpcoming = new Date(event.date) > new Date();
-          const isSelected = selectedEventId === event.id;
-          const organizer = users.find((u) => u.id === event.user_id);
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+        <TabsList className="mb-4 flex justify-center">
+          <TabsTrigger value="events">Events</TabsTrigger>
+          <TabsTrigger value="swappoints">Swap Points</TabsTrigger>
+        </TabsList>
 
-          return (
-            <Card
-              key={event.id}
-              className={`transition-all cursor-pointer overflow-hidden flex flex-col ${
-                isSelected ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md"
-              }`}
-              onClick={() => setSelectedEventId(event.id)}
-            >
-              {/* Imagen */}
-              <CardContent className="p-4 pb-0">
-                <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
-                  <img
-                    src={event.image_url || "/public/imagenotfound.jpeg"}
-                    alt={event.title}
-                    className="object-cover w-full h-full"
-                  />
-                  <div className="absolute top-3 left-3">
-                    <Badge variant={isUpcoming ? "default" : "secondary"}>
-                      {isUpcoming ? "Upcoming" : "Past"}
-                    </Badge>
-                  </div>
+        {/* 🗓️ Eventos */}
+        <TabsContent value="events">
+          {loading ? (
+            <p className="text-center text-muted-foreground py-8">
+              Loading events...
+            </p>
+          ) : (
+            <EventGrid
+              data={filteredEvents}
+              onSelect={(id) => {
+                setSelectedEventId(id);
+                setOpenEventModal(true);
+              }}
+            />
+          )}
+        </TabsContent>
+
+        {/* 📍 Swap Points */}
+        <TabsContent value="swappoints">
+          {loading ? (
+            <p className="text-center text-muted-foreground py-8">
+              Loading swap points...
+            </p>
+          ) : (
+            <SwappointGrid
+              data={filteredSwappoints}
+              onSelect={(id) => {
+                setSelectedSwapPointId(id);
+                setOpenSwapPointModal(true);
+              }}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* 🪟 Modales */}
+      <EventDetailsModal
+        open={openEventModal}
+        onOpenChange={setOpenEventModal}
+        eventId={selectedEventId}
+      />
+      <SwapPointDetailsModal
+        open={openSwapPointModal}
+        onOpenChange={setOpenSwapPointModal}
+        swapPointId={selectedSwapPointId}
+      />
+    </div>
+  );
+}
+
+//
+// 🔹 Grid de eventos con imagen
+//
+function EventGrid({
+  data,
+  onSelect,
+}: {
+  data: Event[];
+  onSelect: (id: number) => void;
+}) {
+  return (
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {data.map((event) => {
+        const isUpcoming = new Date(event.date) > new Date();
+        return (
+          <Card
+            key={event.id}
+            className="transition-all cursor-pointer overflow-hidden flex flex-col hover:shadow-md hover:ring-1 hover:ring-primary/50"
+          >
+            <CardContent className="p-4 pb-0">
+              <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
+                <img
+                  src={event.image_url || "/imagenotfound.jpeg"}
+                  alt={event.title}
+                  className="object-cover w-full h-full"
+                />
+                <div className="absolute top-3 left-3">
+                  <Badge variant={isUpcoming ? "default" : "secondary"}>
+                    {isUpcoming ? "Upcoming" : "Past"}
+                  </Badge>
                 </div>
-              </CardContent>
-
-              {/* Contenido */}
-              <CardHeader className="flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xl font-bold truncate">{event.title}</h3>
-                  <p className="text-muted-foreground text-sm line-clamp-2 mb-2">
-                    {event.description}
-                  </p>
-
-                  <div className="flex items-center gap-2 text-sm mb-1">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="truncate">{event.location}</span>
-                  </div>
-
-                  {organizer && (
-                    <div className="flex items-center gap-2 text-sm mb-1">
-                      <img
-                        src={
-                          organizer.avatar_url || "/public/imagenotfound.jpeg"
-                        }
-                        alt={organizer.username ?? ""}
-                        className="w-6 h-6 rounded-full object-cover"
-                      />
-                      <span className="text-muted-foreground">
-                        by {organizer.username}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <CalendarDays className="h-4 w-4" />
-                    <span>{new Date(event.date).toLocaleDateString()}</span>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <Button
-                    className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      alert(`Viewing details for: ${event.title}`);
-                    }}
-                  >
-                    View Details
-                  </Button>
-                </div>
-              </CardHeader>
-            </Card>
-          );
-        })}
-
-        {filteredEvents.length === 0 && (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground mb-4">
-                No {filterType !== "all" ? filterType : ""} events found.
-              </p>
-              <Button onClick={() => setFilterType("all")}>Show All</Button>
+              </div>
             </CardContent>
+
+            <CardHeader className="flex-1 flex flex-col justify-between p-4 text-left">
+              <h3 className="text-lg font-semibold truncate">{event.title}</h3>
+              {event.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {event.description}
+                </p>
+              )}
+              <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+                <MapPin className="h-4 w-4" />
+                <span className="truncate">{event.location}</span>
+              </div>
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <CalendarDays className="h-4 w-4" />
+                <span>{new Date(event.date).toLocaleDateString()}</span>
+              </div>
+              <div className="mt-4">
+                <Button className="w-full" onClick={() => onSelect(event.id)}>
+                  View Details
+                </Button>
+              </div>
+            </CardHeader>
           </Card>
-        )}
-      </div>
+        );
+      })}
+      {data.length === 0 && (
+        <p className="text-center text-muted-foreground col-span-full py-12">
+          No events found.
+        </p>
+      )}
+    </div>
+  );
+}
+
+//
+// 🔹 Grid de Swap Points con imagen
+//
+function SwappointGrid({
+  data,
+  onSelect,
+}: {
+  data: SwapPoint[];
+  onSelect: (id: number) => void;
+}) {
+  return (
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {data.map((point) => (
+        <Card
+          key={point.id}
+          className="transition-all cursor-pointer overflow-hidden flex flex-col hover:shadow-md hover:ring-1 hover:ring-primary/50"
+        >
+          <CardContent className="p-4 pb-0">
+            <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
+              <img
+                src={point.image_url || "/imagenotfound.jpeg"}
+                alt={point.name}
+                className="object-cover w-full h-full"
+              />
+              <div className="absolute top-3 left-3">
+                <Badge variant="default">Swap Point</Badge>
+              </div>
+            </div>
+          </CardContent>
+
+          <CardHeader className="flex-1 flex flex-col justify-between p-4 text-left">
+            <h3 className="text-lg font-semibold truncate">{point.name}</h3>
+            {point.description && (
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {point.description}
+              </p>
+            )}
+            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
+              <MapPin className="h-4 w-4" />
+              <span className="truncate">
+                {point.address}, {point.city}
+              </span>
+            </div>
+            <div className="mt-4">
+              <Button className="w-full" onClick={() => onSelect(point.id)}>
+                View Details
+              </Button>
+            </div>
+          </CardHeader>
+        </Card>
+      ))}
+      {data.length === 0 && (
+        <p className="text-center text-muted-foreground col-span-full py-12">
+          No swap points found.
+        </p>
+      )}
     </div>
   );
 }
