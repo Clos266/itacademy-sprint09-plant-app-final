@@ -3,15 +3,9 @@ import { ModalDialog } from "@/components/modals/ModalDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { Plant } from "@/types/supabase";
 import { ImageUploader } from "@/components/common/ImageUploader";
-
-interface EditPlantModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  plant: Plant | null;
-  onSave: (id: number, data: Partial<Plant>) => void;
-}
+import type { Plant } from "@/types/supabase";
+import type { EditPlantModalProps, PlantFormData } from "./Plants.types";
 
 export function EditPlantModal({
   open,
@@ -19,20 +13,31 @@ export function EditPlantModal({
   plant,
   onSave,
 }: EditPlantModalProps) {
-  const [formData, setFormData] = useState<Partial<Plant>>({});
   const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState<Partial<PlantFormData>>({});
 
   useEffect(() => {
-    if (plant) setFormData(plant);
+    if (plant) {
+      setFormData({
+        nombre_comun: plant.nombre_comun,
+        nombre_cientifico: plant.nombre_cientifico || "",
+        familia: plant.familia || "",
+        especie: plant.especie || "",
+        disponible: plant.disponible,
+        interval_days: plant.interval_days,
+        last_watered: plant.last_watered,
+        image_url: plant.image_url || "",
+      });
+    }
   }, [plant]);
 
-  const handleChange = (key: keyof Plant, value: any) => {
+  const handleChange = (key: keyof PlantFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = () => {
-    if (!plant || uploading) return;
-    onSave(plant.id, formData);
+  const handleSave = async () => {
+    if (!plant) return;
+    await onSave(plant.id, formData);
     onOpenChange(false);
   };
 
@@ -41,8 +46,9 @@ export function EditPlantModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Edit Plant"
-      onConfirm={handleSubmit}
-      confirmLabel={uploading ? "Uploading..." : "Save Changes"}
+      onConfirm={handleSave}
+      confirmLabel="Save Changes"
+      loading={uploading}
     >
       {/* 🖼️ Cambiar imagen */}
 

@@ -10,17 +10,9 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin } from "lucide-react";
-import type { Database } from "@/types/supabase";
 import { getPlantById } from "@/services/plantCrudService";
-
-type Plant = Database["public"]["Tables"]["plants"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-
-interface PlantDetailsModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  plantId: number | null;
-}
+import type { Plant, Profile } from "@/types/supabase";
+import type { PlantDetailsModalProps } from "./Plants.types";
 
 export function PlantDetailsModal({
   open,

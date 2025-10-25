@@ -1,110 +1,103 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Leaf, MapPin, Filter, RefreshCcw } from "lucide-react";
-import { FilterBar } from "@/components/common/FilterBar";
-import { SearchInput } from "@/components/common/SearchInput";
+import { Leaf } from "lucide-react";
 import { ProposeSwapModal } from "@/components/swaps/ProposeSwapModal";
-import { Spinner } from "@/components/ui/spinner";
-import { showError } from "@/services/toastService";
-import { fetchPlants } from "@/services/plantCrudService";
-import { supabase } from "@/services/supabaseClient";
-import type { Database } from "@/types/supabase";
 import { PaginatedCards } from "@/components/common/PaginatedCards";
+import { LoadingState } from "@/components/common/LoadingState";
+import { PlantFilters } from "@/components/Plants/PlantFilters";
+import { PlantCard } from "@/components/Plants/PlantCard";
+import { usePlantSwap, type FullPlant } from "@/hooks/usePlantSwap";
+import { useFiltering } from "@/hooks/useFiltering";
+import { usePagination } from "@/hooks/usePagination";
 
-type Plant = Database["public"]["Tables"]["plants"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-interface FullPlant extends Plant {
-  profile?: Profile | null;
-}
-
-// 🪴 9 plantas por página
-const ITEMS_PER_PAGE = 9;
-
+/**
+ * PlantsSwapPage - A comprehensive plant browsing and swap interface
+ *
+ * This component provides users with the ability to:
+ * - Browse available plants from other users
+ * - Search and filter plants by various criteria
+ * - View detailed plant information with owner details
+ * - Propose plant swaps with other users
+ * - Navigate through paginated results
+ *
+ * Features:
+ * - Real-time search functionality
+ * - Filter by availability status
+ * - Responsive grid layout with pagination
+ * - Optimized performance with memoized components
+ * - Comprehensive error handling and loading states
+ */
 export default function PlantsSwapPage() {
-  const [plants, setPlants] = useState<FullPlant[]>([]);
-  const [userPlants, setUserPlants] = useState<FullPlant[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState<
-    "all" | "available" | "unavailable"
-  >("all");
-  const [search, setSearch] = useState("");
-  const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
-  const [openSwap, setOpenSwap] = useState(false);
-  const [targetPlant, setTargetPlant] = useState<FullPlant | null>(null);
-  const [page, setPage] = useState(1);
+  // State management using custom hook
+  const { userPlants, loading } = usePlantSwap();
 
-  // 🌿 Fetch all plants + user's own
-  useEffect(() => {
-    const loadPlants = async () => {
-      try {
-        setLoading(true);
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-        if (userError) throw userError;
-        if (!user) throw new Error("No active session");
-
-        // ✅ Get all plants with profiles
-        const data = await fetchPlants(true);
-        const otherPlants = data.filter((p) => p.user_id !== user.id);
-        const myPlants = data.filter((p) => p.user_id === user.id);
-
-        setPlants(otherPlants);
-        setUserPlants(myPlants);
-      } catch (err) {
-        console.error("Error fetching plants:", err);
-        showError("Could not load plants.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPlants();
-  }, []);
-
-  // 🔍 Filter + search
-  const filteredPlants = useMemo(() => {
-    const term = search.toLowerCase();
-    return plants.filter((plant) => {
-      const matchesSearch =
-        plant.nombre_comun?.toLowerCase().includes(term) ||
-        plant.nombre_cientifico?.toLowerCase().includes(term) ||
-        plant.especie?.toLowerCase().includes(term);
-
-      if (!matchesSearch) return false;
+  // Configuración del hook de filtrado
+  const filterConfig = {
+    searchFields: (plant: FullPlant) => [
+      plant.nombre_comun || "",
+      plant.nombre_cientifico || "",
+      plant.especie || "",
+      plant.profile?.username || "",
+    ],
+    filterFn: (plant: FullPlant, filterType: string) => {
+      if (filterType === "all") return true;
       if (filterType === "available") return plant.disponible;
       if (filterType === "unavailable") return !plant.disponible;
       return true;
-    });
-  }, [plants, search, filterType]);
+    },
+  };
 
-  // 📄 Pagination logic
-  const totalPages = Math.ceil(filteredPlants.length / ITEMS_PER_PAGE);
-  const paginatedPlants = filteredPlants.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
-  );
+  const {
+    search,
+    filterType,
+    filtered: filteredPlants,
+    setSearch,
+    setFilterType,
+    clearSearch,
+  } = useFiltering({
+    data: userPlants,
+    config: filterConfig,
+    initialFilter: "available",
+  });
 
-  const showingStart = (page - 1) * ITEMS_PER_PAGE + 1;
-  const showingEnd = Math.min(page * ITEMS_PER_PAGE, filteredPlants.length);
+  // Hook de paginación separado
+  const {
+    page,
+    totalPages,
+    paginated: paginatedPlants,
+    showingStart,
+    showingEnd,
+    setPage,
+  } = usePagination(filteredPlants, { itemsPerPage: 9 });
 
-  // 🌀 Loading
+  // Local component state
+  const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
+  const [openSwap, setOpenSwap] = useState(false);
+  const [targetPlant, setTargetPlant] = useState<FullPlant | null>(null);
+
+  // Event handlers
+  const handlePlantSelect = useCallback((plantId: number) => {
+    setSelectedPlantId(plantId);
+  }, []);
+
+  const handleProposeSwap = useCallback((plant: FullPlant) => {
+    setTargetPlant(plant);
+    setOpenSwap(true);
+  }, []);
+
+  const handleCloseSwap = useCallback(() => {
+    setOpenSwap(false);
+    setTargetPlant(null);
+  }, []);
+
+  // Loading state
   if (loading) {
-    return (
-      <div className="flex flex-col justify-center items-center h-[70vh] text-muted-foreground">
-        <Spinner className="w-6 h-6 mb-4" />
-        <p>Loading plants...</p>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
     <div className="min-h-screen space-y-6">
-      {/* 🌿 Header */}
+      {/* Page Header */}
       <PageHeader>
         <PageHeaderHeading>
           <Leaf className="inline-block w-6 h-6 mr-2 text-primary" />
@@ -112,166 +105,49 @@ export default function PlantsSwapPage() {
         </PageHeaderHeading>
       </PageHeader>
 
-      {/* 🔍 Search + Filters */}
-      <Card>
-        <CardContent>
-          <FilterBar
-            searchComponent={
-              <SearchInput
-                value={search}
-                onChange={(val) => {
-                  setSearch(val);
-                  setPage(1); // reset page on search
-                }}
-                onClear={() => {
-                  setSearch("");
-                  setPage(1);
-                }}
-                placeholder="Search plants or species..."
-              />
-            }
-            filters={
-              <>
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                {["all", "available", "unavailable"].map((type) => (
-                  <Button
-                    key={type}
-                    variant={filterType === type ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setFilterType(type as any);
-                      setPage(1);
-                    }}
-                  >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </Button>
-                ))}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSearch("")}
-                >
-                  <RefreshCcw className="w-4 h-4" />
-                </Button>
-              </>
-            }
-          />
-        </CardContent>
-      </Card>
+      {/* Search and Filters */}
+      <PlantFilters
+        search={search}
+        filterType={filterType}
+        onSearchChange={setSearch}
+        onFilterChange={setFilterType}
+        onClearSearch={clearSearch}
+      />
 
-      {/* 📊 Info de paginación */}
-      <div className="flex justify-end text-sm text-muted-foreground pr-2">
-        Showing <span className="mx-1 font-medium">{showingStart}</span>–
-        <span className="mx-1 font-medium">{showingEnd}</span> of{" "}
-        <span className="mx-1 font-medium">{filteredPlants.length}</span> plants
-      </div>
+      {/* Pagination Info */}
+      {filteredPlants.length > 0 && (
+        <div className="flex justify-end text-sm text-muted-foreground pr-2">
+          Showing <span className="mx-1 font-medium">{showingStart}</span>–
+          <span className="mx-1 font-medium">{showingEnd}</span> of{" "}
+          <span className="mx-1 font-medium">{filteredPlants.length}</span>{" "}
+          plants
+        </div>
+      )}
 
-      {/* 🪴 Plant Grid con paginación */}
+      {/* Plant Grid with Pagination */}
       <PaginatedCards
         data={paginatedPlants}
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
-        emptyMessage="No plants found."
-        renderCard={(plant) => {
-          const owner = plant.profile;
-          const isSelected = selectedPlantId === plant.id;
-
-          return (
-            <Card
-              key={plant.id}
-              className={`transition-all cursor-pointer overflow-hidden flex flex-col ${
-                isSelected ? "ring-2 ring-primary shadow-lg" : "hover:shadow-md"
-              }`}
-              onClick={() => setSelectedPlantId(plant.id)}
-            >
-              <CardContent className="p-4 pb-0">
-                <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
-                  <img
-                    src={plant.image_url || "/imagenotfound.jpeg"}
-                    alt={plant.nombre_comun}
-                    className="object-cover w-full h-full"
-                  />
-                  <div className="absolute top-3 left-3">
-                    <Badge
-                      variant={plant.disponible ? "default" : "destructive"}
-                    >
-                      {plant.disponible ? "Available" : "Unavailable"}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-
-              <CardHeader className="flex-1 flex flex-col justify-between p-4 items-center text-left">
-                {/* 📋 Grid de datos principales */}
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm w-full max-w-xs">
-                  {/* 🌱 Nombre común */}
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase">
-                      Common Name
-                    </p>
-                    <p className="font-semibold truncate">
-                      {plant.nombre_comun}
-                    </p>
-                  </div>
-
-                  {/* 🔬 Nombre científico */}
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase">
-                      Scientific
-                    </p>
-                    <p className="italic truncate">
-                      {plant.nombre_cientifico || "-"}
-                    </p>
-                  </div>
-
-                  {/* 🏙️ Ciudad */}
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="truncate">
-                      {owner?.ciudad || "Unknown"}
-                    </span>
-                  </div>
-
-                  {/* 👤 Usuario */}
-                  <div className="flex items-center  gap-2">
-                    <img
-                      src={owner?.avatar_url || "/avatar-placeholder.png"}
-                      alt={owner?.username || "User"}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                    <span className="text-muted-foreground truncate">
-                      {owner?.username || "Anonymous"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 🤝 Botón */}
-                <div className="mt-4 w-full">
-                  <Button
-                    disabled={!plant.disponible}
-                    className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setTargetPlant(plant);
-                      setOpenSwap(true);
-                    }}
-                  >
-                    Propose Swap
-                  </Button>
-                </div>
-              </CardHeader>
-            </Card>
-          );
-        }}
+        emptyMessage="No plants found matching your criteria."
+        renderCard={(plant) => (
+          <PlantCard
+            key={plant.id}
+            plant={plant}
+            isSelected={selectedPlantId === plant.id}
+            onSelect={handlePlantSelect}
+            onProposeSwap={handleProposeSwap}
+          />
+        )}
       />
 
-      {/* 🤝 Swap Modal */}
+      {/* Swap Proposal Modal */}
       <ProposeSwapModal
         open={openSwap}
-        onOpenChange={setOpenSwap}
+        onOpenChange={handleCloseSwap}
         targetPlant={targetPlant}
-        userPlants={userPlants.filter((p) => p.disponible)}
+        userPlants={userPlants.filter((plant) => plant.disponible)}
       />
     </div>
   );

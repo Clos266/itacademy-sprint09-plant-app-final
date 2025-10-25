@@ -1,14 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
-import type { Database } from "@/types/supabase";
+import type { Swap, Profile, Plant } from "@/types/supabase";
 import {
   fetchSwapsWithRelations,
   subscribeToUserSwaps,
 } from "@/services/swapCrudService";
 import { supabase } from "@/services/supabaseClient";
-
-type Swap = Database["public"]["Tables"]["swaps"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-type Plant = Database["public"]["Tables"]["plants"]["Row"];
 
 export interface FullSwap extends Swap {
   sender: Profile | null;

@@ -1,9 +1,5 @@
 import { supabase } from "./supabaseClient";
-import type { Database } from "@/types/supabase";
-
-type Event = Database["public"]["Tables"]["events"]["Row"];
-type EventInsert = Omit<Event, "id" | "created_at">; // no insertes id ni created_at
-type EventUpdate = Partial<Event>;
+import type { Event, EventInsert, EventUpdate } from "@/types/supabase";
 
 const TABLE = "events" as const;
 

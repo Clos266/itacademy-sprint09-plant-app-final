@@ -1,25 +1,11 @@
-// src/services/useService.ts
+// src/services/userService.ts
 import { supabase } from "./supabaseClient";
-import type { Database } from "@/types/supabase";
-
-type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
-type ProfileInsert = {
-  id: string;
-  username?: string | null;
-  email?: string | null;
-  cp?: string | null;
-  ciudad?: string | null;
-  lat?: number | null;
-  lng?: number | null;
-  avatar_url?: string | null;
-};
-
-type ProfileUpdate = Partial<Omit<ProfileRow, "id" | "created_at">>;
+import type { Profile, ProfileInsert, ProfileUpdate } from "@/types/supabase";
 
 const TABLE = "profiles" as const;
 
 // 📥 Obtener todos los usuarios (opcional, para vistas públicas)
-export async function fetchUsers(): Promise<ProfileRow[]> {
+export async function fetchUsers(): Promise<Profile[]> {
   const { data, error } = await supabase
     .from(TABLE)
     .select("id, username, email, cp, ciudad, lat, lng, avatar_url, created_at")
@@ -29,7 +15,7 @@ export async function fetchUsers(): Promise<ProfileRow[]> {
 }
 
 // 📄 Obtener perfil por ID
-export async function fetchUserById(id: string): Promise<ProfileRow | null> {
+export async function fetchUserById(id: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from(TABLE)
     .select("id, created_at, username, email, cp, ciudad, lat, lng, avatar_url")
@@ -43,7 +29,7 @@ export async function fetchUserById(id: string): Promise<ProfileRow | null> {
 export async function updateUser(
   id: string,
   updates: ProfileUpdate
-): Promise<ProfileRow> {
+): Promise<Profile> {
   const { data, error } = await supabase
     .from(TABLE)
     .update(updates)
@@ -57,7 +43,7 @@ export async function updateUser(
 // 🧩 Crear perfil (usualmente tras signup)
 export async function createUserProfile(
   profile: ProfileInsert
-): Promise<ProfileRow> {
+): Promise<Profile> {
   const { data, error } = await supabase
     .from(TABLE)
     .insert(profile)

@@ -14,18 +14,8 @@ import { showError, showSuccess } from "@/services/toastService";
 import { addSwapProposal } from "@/services/swapCrudService";
 import { getCurrentUser } from "@/services/authService";
 import { fetchSwapPoints } from "@/services/swapPointsCrudService";
-import type { Database } from "@/types/supabase";
-
-type Plant = Database["public"]["Tables"]["plants"]["Row"];
-type SwapPoint = Database["public"]["Tables"]["swap_points"]["Row"];
-
-interface ProposeSwapModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  targetPlant: Plant | null;
-  userPlants: Plant[];
-}
-
+import type { SwapPoint } from "@/types/supabase";
+import type { ProposeSwapModalProps } from "./Swaps.types";
 export function ProposeSwapModal({
   open,
   onOpenChange,

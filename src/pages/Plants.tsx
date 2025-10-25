@@ -11,8 +11,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { usePagination } from "@/hooks/usePagination";
 import { SearchInput } from "@/components/common/SearchInput";
+import { ImageWithFallback } from "@/components/common/ImageWithFallback";
 import { Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -28,6 +28,8 @@ import {
 
 import { NewPlantButton } from "@/components/Plants/NewPlantModal";
 import { EditPlantModal } from "@/components/Plants/EditPlantModal";
+import { useFiltering } from "@/hooks/useFiltering";
+import { usePagination } from "@/hooks/usePagination";
 import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
 
 import type { Database } from "@/types/supabase";
@@ -39,21 +41,57 @@ import {
 } from "@/services/plantCrudService";
 import { showSuccess, showError, showWarning } from "@/services/toastService";
 import { supabase } from "@/services/supabaseClient";
-
-type Plant = Database["public"]["Tables"]["plants"]["Row"];
+import type { Plant } from "@/types/supabase";
 
 export default function MyPlantsPage() {
   const [plants, setPlants] = useState<Plant[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
   const [openEdit, setOpenEdit] = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
-  const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState<
-    "all" | "available" | "unavailable"
-  >("all");
   const [category, setCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Configuración del hook de filtrado
+  const filterConfig = {
+    searchFields: (plant: Plant) => [
+      plant.nombre_comun || "",
+      plant.nombre_cientifico || "",
+      plant.especie || "",
+    ],
+    filterFn: (plant: Plant, filterType: string) => {
+      const availabilityMatch =
+        filterType === "all"
+          ? true
+          : filterType === "available"
+          ? plant.disponible
+          : !plant.disponible;
+
+      const categoryMatch =
+        category === "all" ||
+        plant.especie?.toLowerCase().includes(category.toLowerCase());
+
+      return availabilityMatch && categoryMatch;
+    },
+  };
+
+  const {
+    search,
+    filterType,
+    filtered,
+    setSearch,
+    setFilterType,
+    clearSearch,
+  } = useFiltering({
+    data: plants,
+    config: filterConfig,
+    initialFilter: "all",
+  });
+
+  // Hook de paginación separado
+  const { page, totalPages, paginated, setPage } = usePagination(filtered, {
+    itemsPerPage: 5,
+  });
 
   // 🔄 Load and subscribe to user plants
   useEffect(() => {
@@ -127,25 +165,6 @@ export default function MyPlantsPage() {
       showError(err.message || "Error deleting plant.");
     }
   };
-
-  // 🔍 Local filtering
-  const filtered = plants.filter((p) => {
-    const searchMatch = p.nombre_comun
-      ?.toLowerCase()
-      .includes(search.toLowerCase());
-    const availabilityMatch =
-      filterType === "all"
-        ? true
-        : filterType === "available"
-        ? p.disponible
-        : !p.disponible;
-    const categoryMatch =
-      category === "all" ||
-      p.especie?.toLowerCase().includes(category.toLowerCase());
-    return searchMatch && availabilityMatch && categoryMatch;
-  });
-
-  const { page, totalPages, paginated, goToPage } = usePagination(filtered, 5);
 
   const handleEdit = (plant: Plant) => {
     setSelectedPlant(plant);
@@ -223,9 +242,9 @@ export default function MyPlantsPage() {
             key: "image",
             header: "Image",
             render: (p: Plant) => (
-              <img
-                src={p.image_url || "/public/imagenotfound.jpeg"}
-                alt={p.nombre_comun}
+              <ImageWithFallback
+                src={p.image_url || ""}
+                alt={p.nombre_comun || "Plant"}
                 className="w-12 h-12 rounded-lg object-cover shadow-sm cursor-pointer transition-transform hover:scale-105"
                 onClick={() => handleOpenDetails(p)}
               />
@@ -285,7 +304,7 @@ export default function MyPlantsPage() {
         ]}
         page={page}
         totalPages={totalPages}
-        onPageChange={goToPage}
+        onPageChange={setPage}
       />
 
       <PlantDetailsModal

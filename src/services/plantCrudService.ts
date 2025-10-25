@@ -1,13 +1,12 @@
 import { supabase } from "./supabaseClient";
-import type { Database } from "@/types/supabase";
+import type {
+  Plant,
+  Profile,
+  PlantInsert,
+  PlantUpdate,
+  PlantWithProfile,
+} from "@/types/supabase";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-
-// 🔹 Tipos base
-export type Plant = Database["public"]["Tables"]["plants"]["Row"];
-export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-export type PlantInsert = Omit<Plant, "id" | "created_at">;
-export type PlantUpdate = Partial<Plant>;
-export type PlantWithProfile = Plant & { profile?: Profile | null };
 
 const TABLE = "plants" as const;
 

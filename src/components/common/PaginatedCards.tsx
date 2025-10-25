@@ -6,16 +6,7 @@ import {
   PaginationNext,
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
-
-interface PaginatedCardsProps<T> {
-  data: T[];
-  renderCard: (item: T) => React.ReactNode;
-  page: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  itemsPerRow?: number; // opcional, por si quieres controlar columnas
-  emptyMessage?: string;
-}
+import type { PaginatedCardsProps } from "@/types/ui";
 
 export function PaginatedCards<T>({
   data,

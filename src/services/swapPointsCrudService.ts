@@ -1,7 +1,5 @@
 import { supabase } from "@/services/supabaseClient";
-import type { Database } from "@/types/supabase";
-
-type SwapPoint = Database["public"]["Tables"]["swap_points"]["Row"];
+import type { SwapPoint } from "@/types/supabase";
 
 export async function fetchSwapPoints(): Promise<SwapPoint[]> {
   const { data, error } = await supabase.from("swap_points").select("*");

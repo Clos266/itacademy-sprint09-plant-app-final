@@ -1,15 +1,13 @@
 import { supabase } from "./supabaseClient";
-import type { Database } from "@/types/supabase";
+import type {
+  Swap,
+  SwapInsert,
+  SwapUpdate,
+  SwapPoint,
+  SwapWithRelations,
+} from "@/types/supabase";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { showError, showSuccess } from "@/services/toastService";
-
-export type Swap = Database["public"]["Tables"]["swaps"]["Row"];
-export type SwapInsert = Omit<
-  Swap,
-  "id" | "created_at" | "updated_at" | "status"
-> & { status?: Swap["status"] };
-export type SwapUpdate = Partial<Swap>;
-export type SwapPoint = Database["public"]["Tables"]["swap_points"]["Row"];
 
 const TABLE = "swaps" as const;
 const MSG_TABLE = "swap_messages" as const;

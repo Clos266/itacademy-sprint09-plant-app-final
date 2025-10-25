@@ -14,10 +14,10 @@ import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
 import { UserDetailsModal } from "@/Users/UserDetailsModal";
 import { SwapInfoModal } from "@/components/swaps/SwapInfoModal";
 import { useSwaps } from "@/hooks/useSwaps";
-import type { Database } from "@/types/supabase";
+import { usePagination } from "@/hooks/usePagination";
+import { ImageWithFallback } from "@/components/common/ImageWithFallback";
+import type { Swap } from "@/types/supabase";
 import { Spinner } from "@/components/ui/spinner";
-
-type Swap = Database["public"]["Tables"]["swaps"]["Row"];
 type SwapStatus = "pending" | "accepted" | "rejected" | "completed";
 
 export default function SwapsPage() {
@@ -57,13 +57,10 @@ export default function SwapsPage() {
     }
     return 0;
   });
-  const ITEMS_PER_PAGE = 5;
-  const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE);
-  const paginated = sorted.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
-  );
+  // Hook de paginación
+  const { page, totalPages, paginated, setPage } = usePagination(sorted, {
+    itemsPerPage: 5,
+  });
   if (loading) {
     return (
       <div className="p-8 text-center text-muted-foreground">
@@ -118,9 +115,9 @@ export default function SwapsPage() {
             header: "Your Plant",
             render: (swap: any) => (
               <div className="flex items-center gap-3">
-                <img
-                  src={swap.senderPlant?.image_url || "/imagenotfound.jpeg"}
-                  alt={swap.senderPlant?.nombre_comun}
+                <ImageWithFallback
+                  src={swap.senderPlant?.image_url || ""}
+                  alt={swap.senderPlant?.nombre_comun || "Plant"}
                   className="w-10 h-10 rounded-lg object-cover cursor-pointer hover:scale-105 transition-transform"
                   onClick={() => setSelectedPlantId(swap.senderPlant?.id)}
                 />
@@ -133,9 +130,9 @@ export default function SwapsPage() {
             header: "Other Plant",
             render: (swap: any) => (
               <div className="flex items-center gap-3">
-                <img
-                  src={swap.receiverPlant?.image_url || "/imagenotfound.jpeg"}
-                  alt={swap.receiverPlant?.nombre_comun}
+                <ImageWithFallback
+                  src={swap.receiverPlant?.image_url || ""}
+                  alt={swap.receiverPlant?.nombre_comun || "Plant"}
                   className="w-10 h-10 rounded-lg object-cover cursor-pointer hover:scale-105 transition-transform"
                   onClick={() => setSelectedPlantId(swap.receiverPlant?.id)}
                 />
@@ -156,9 +153,10 @@ export default function SwapsPage() {
             ) as unknown as string,
             render: (swap: any) => (
               <div className="flex items-center gap-2">
-                <img
-                  src={swap.receiver?.avatar_url || "/avatar-placeholder.png"}
+                <ImageWithFallback
+                  src={swap.receiver?.avatar_url || ""}
                   alt={swap.receiver?.username ?? "User"}
+                  fallbackSrc="/avatar-placeholder.png"
                   className="w-8 h-8 rounded-full object-cover cursor-pointer hover:scale-105 transition-transform"
                   onClick={() => setSelectedUserId(swap.receiver?.id)}
                 />

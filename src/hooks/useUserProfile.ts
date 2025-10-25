@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import type { Database } from "@/types/supabase";
+import type { Profile } from "@/types/supabase";
 import { fetchUserById } from "@/services/userService";
-
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 export function useUserProfile(userId: string | null, open = true) {
   const [user, setUser] = useState<Profile | null>(null);
