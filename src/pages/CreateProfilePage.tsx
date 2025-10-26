@@ -1,28 +1,45 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/services/supabaseClient";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { showSuccess, showError } from "@/services/toastService";
 import { useNavigate } from "react-router-dom";
+import { useProfileForm, type ProfileFormData } from "@/hooks/useProfileForm";
 import type { User } from "@supabase/supabase-js";
 
-// TODO: Extract to useProfileForm hook - form state management and validation
-interface ProfileFormData {
-  username: string;
-  ciudad: string;
-  cp: string;
-}
-
 export default function CreateProfilePage() {
-  const [form, setForm] = useState<ProfileFormData>({
-    username: "",
-    ciudad: "",
-    cp: "",
-  });
   const [user, setUser] = useState<User | null>(null);
-  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
+
+  const {
+    form,
+    saving,
+    isValid,
+    handleUsernameChange,
+    handleCiudadChange,
+    handleCpChange,
+    handleSave,
+  } = useProfileForm({
+    onSave: async (formData: ProfileFormData) => {
+      if (!user) throw new Error("User not authenticated");
+
+      // Using upsert instead of insert to handle cases where the profile already exists
+      // (database trigger on_auth_user_created may have already created a basic profile)
+      const { error } = await supabase.from("profiles").upsert({
+        id: user.id,
+        email: user.email,
+        username: formData.username,
+        ciudad: formData.ciudad || null,
+        cp: formData.cp || null,
+      });
+
+      if (error) throw error;
+
+      showSuccess("Profile created!");
+      navigate("/plants");
+    },
+  });
 
   // TODO: Extract to useAuth hook - authentication state management
   useEffect(() => {
@@ -55,69 +72,6 @@ export default function CreateProfilePage() {
 
     loadUser();
   }, [navigate]);
-
-  // TODO: Extract to useProfileForm hook - form validation and submission logic
-  const handleSave = useCallback(async () => {
-    if (!user) {
-      showError("User not authenticated");
-      return;
-    }
-
-    // TODO: Replace with Zod validation when integrating schema validation
-    if (!form.username.trim()) {
-      showError("Please enter a username");
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      // TODO: Extract to useProfileForm hook - Supabase profile creation logic
-      // Using upsert instead of insert to handle cases where the profile already exists
-      // (database trigger on_auth_user_created may have already created a basic profile)
-      const { error } = await supabase.from("profiles").upsert({
-        id: user.id,
-        email: user.email,
-        username: form.username.trim(),
-        ciudad: form.ciudad.trim() || null,
-        cp: form.cp.trim() || null,
-      });
-
-      if (error) throw error;
-
-      showSuccess("Profile created!");
-      navigate("/plants");
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to create profile";
-      console.error("Error creating profile:", err);
-      showError(errorMessage);
-    } finally {
-      setSaving(false);
-    }
-  }, [user, form, navigate]);
-
-  // TODO: Extract to useProfileForm hook - optimized form field handlers
-  const handleUsernameChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, username: e.target.value }));
-    },
-    []
-  );
-
-  const handleCiudadChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, ciudad: e.target.value }));
-    },
-    []
-  );
-
-  const handleCpChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, cp: e.target.value }));
-    },
-    []
-  );
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6">
@@ -167,7 +121,7 @@ export default function CreateProfilePage() {
 
           <Button
             onClick={handleSave}
-            disabled={saving || !form.username.trim()}
+            disabled={saving || !isValid}
             className="w-full mt-4"
           >
             {saving ? "Saving..." : "Save Profile"}
