@@ -11,7 +11,7 @@ import { PaginatedTable } from "@/components/common/PaginatedTable";
 import { Toggle } from "@/components/ui/toggle";
 import { ArrowUpDown } from "lucide-react";
 import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
-import { UserDetailsModal } from "@/Users/UserDetailsModal";
+import { UserDetailsModal } from "@/components/Users/UserDetailsModal";
 import { SwapInfoModal } from "@/components/swaps/SwapInfoModal";
 import { useSwaps } from "@/hooks/useSwaps";
 import { usePagination } from "@/hooks/usePagination";
