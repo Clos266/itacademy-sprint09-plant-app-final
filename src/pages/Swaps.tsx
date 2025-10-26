@@ -298,7 +298,11 @@ export default function SwapsPage() {
                 <Button
                   size="sm"
                   variant={
-                    swap.status === "completed" ? "outline" : "secondary"
+                    swap.status === "completed"
+                      ? "outline"
+                      : swap.status === "rejected"
+                      ? "destructive"
+                      : "secondary"
                   }
                   disabled={swap.status !== "accepted"}
                   onClick={() => handleMarkAsCompleted(swap.id)}
@@ -306,12 +310,18 @@ export default function SwapsPage() {
                   title={
                     swap.status === "completed"
                       ? "Already completed"
+                      : swap.status === "rejected"
+                      ? "This swap was rejected"
                       : swap.status !== "accepted"
                       ? "Only accepted swaps can be marked as completed"
                       : "Mark as completed"
                   }
                 >
-                  {swap.status === "completed" ? "Completed" : "Complete"}
+                  {swap.status === "completed"
+                    ? "Completed"
+                    : swap.status === "rejected"
+                    ? "Rejected"
+                    : "Complete"}
                 </Button>
               </div>
             ),
