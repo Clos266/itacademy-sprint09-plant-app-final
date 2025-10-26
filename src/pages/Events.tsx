@@ -96,7 +96,7 @@ export default function EventsPage() {
   }, [swappoints, search]);
 
   return (
-    <div className="min-h-screen space-y-6">
+    <div className="min-h-screen  space-y-6">
       <PageHeader>
         <PageHeaderHeading>Find Events and Swap Points</PageHeaderHeading>
       </PageHeader>
@@ -110,7 +110,7 @@ export default function EventsPage() {
           <TabsTrigger value="swappoints">Swap Points</TabsTrigger>
         </TabsList>
 
-        <Card>
+        <Card className="mb-4">
           <CardContent>
             <FilterBar
               searchComponent={
