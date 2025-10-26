@@ -1,9 +1,9 @@
 import {
   LucideIcon,
-  HomeIcon,
+  Compass,
   LeafIcon,
   ArrowLeftRight,
-  MapPin,
+  Earth,
 } from "lucide-react";
 
 type MenuItemType = {
@@ -17,15 +17,15 @@ type MenuType = MenuItemType[];
 
 export const mainMenu: MenuType = [
   {
-    title: "Home",
+    title: "Search Plants",
     url: "/",
-    icon: HomeIcon,
+    icon: Compass,
   },
 
   {
-    title: "Events",
+    title: "Community",
     url: "/events",
-    icon: MapPin,
+    icon: Earth,
   },
   {
     title: "Swaps",
@@ -33,7 +33,7 @@ export const mainMenu: MenuType = [
     icon: ArrowLeftRight,
   },
   {
-    title: "my Plants",
+    title: "Herbarium",
     url: "/plants",
     icon: LeafIcon,
   },
