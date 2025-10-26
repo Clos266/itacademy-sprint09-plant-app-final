@@ -17,6 +17,7 @@ import { CalendarDays, MapPin } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/services/supabaseClient";
 import type { Database } from "@/types/supabase";
+import { LoadingState } from "@/components/common/LoadingState";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
@@ -164,9 +165,7 @@ export function EventDetailsModal({
 
         <ScrollArea className="max-h-[85vh] p-4">
           {loading ? (
-            <div className="p-6 text-center text-muted-foreground">
-              Loading...
-            </div>
+            <LoadingState className="p-6" />
           ) : !event ? (
             <div className="p-6 text-center text-destructive">
               Could not load this event.

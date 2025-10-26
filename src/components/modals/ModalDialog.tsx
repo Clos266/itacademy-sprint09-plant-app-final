@@ -7,7 +7,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react"; // 🔄 spinner icon
+import { Spinner } from "@/components/ui/spinner";
 import { ReactNode } from "react";
 
 interface ModalDialogProps {
@@ -20,6 +20,7 @@ interface ModalDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   loading?: boolean;
+  loadingText?: string;
 }
 
 export function ModalDialog({
@@ -32,6 +33,7 @@ export function ModalDialog({
   confirmLabel = "Save",
   cancelLabel = "Cancel",
   loading = false,
+  loadingText = "Saving...",
 }: ModalDialogProps) {
   return (
     <Dialog
@@ -41,7 +43,11 @@ export function ModalDialog({
         if (!loading) onOpenChange(nextOpen);
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent
+        className="sm:max-w-lg"
+        aria-busy={loading}
+        aria-describedby={loading ? "modal-loading-region" : undefined}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
@@ -64,9 +70,10 @@ export function ModalDialog({
               onClick={onConfirm}
               disabled={loading}
               className="min-w-[90px] flex items-center justify-center gap-2"
+              id={loading ? "modal-loading-region" : undefined}
             >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {loading ? "Saving..." : confirmLabel}
+              {loading && <Spinner className="w-4 h-4 mr-2" />}
+              {loading ? loadingText : confirmLabel}
             </Button>
           )}
         </DialogFooter>

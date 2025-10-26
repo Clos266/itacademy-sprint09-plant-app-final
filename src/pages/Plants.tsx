@@ -4,13 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FilterBar } from "@/components/common/FilterBar";
 import { PaginatedTable } from "@/components/common/PaginatedTable";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+
 import { usePagination } from "@/hooks/usePagination";
 import { SearchInput } from "@/components/common/SearchInput";
 import { Pencil, Trash2 } from "lucide-react";
@@ -28,6 +22,7 @@ import {
 
 import { NewPlantButton } from "@/components/Plants/NewPlantModal";
 import { EditPlantModal } from "@/components/Plants/EditPlantModal";
+import { LoadingState } from "@/components/common/LoadingState";
 import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
 
 import type { Database } from "@/types/supabase";
@@ -45,7 +40,7 @@ type FilterType = "all" | "available" | "unavailable";
 
 // TODO: Extract to shared constants file when growing
 const FILTER_TYPES: FilterType[] = ["all", "available", "unavailable"] as const;
-const CATEGORIES = ["all", "suculentas", "cactus", "interior"] as const;
+
 const ITEMS_PER_PAGE = 5;
 
 export default function MyPlantsPage() {
@@ -55,7 +50,7 @@ export default function MyPlantsPage() {
   const [openDetails, setOpenDetails] = useState(false);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<FilterType>("all");
-  const [category, setCategory] = useState("all");
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -154,14 +149,9 @@ export default function MyPlantsPage() {
           ? plant.disponible
           : !plant.disponible;
 
-      const categoryMatch =
-        category === "all" ||
-        (plant.especie?.toLowerCase().includes(category.toLowerCase()) ??
-          false);
-
-      return searchMatch && availabilityMatch && categoryMatch;
+      return searchMatch && availabilityMatch;
     });
-  }, [plants, search, filterType, category]);
+  }, [plants, search, filterType]);
 
   const { page, totalPages, paginated, goToPage } = usePagination(
     filteredPlants,
@@ -180,8 +170,8 @@ export default function MyPlantsPage() {
 
   if (loading)
     return (
-      <div className="flex justify-center items-center h-[60vh] text-muted-foreground">
-        Loading your plants...
+      <div className="h-[60vh]">
+        <LoadingState className="h-full" />
       </div>
     );
 
@@ -218,27 +208,6 @@ export default function MyPlantsPage() {
                     {type.charAt(0).toUpperCase() + type.slice(1)}
                   </Button>
                 ))}
-
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat === "all"
-                          ? "All"
-                          : cat === "suculentas"
-                          ? "Succulents"
-                          : cat === "cactus"
-                          ? "Cactus"
-                          : cat === "interior"
-                          ? "Indoor"
-                          : cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
 
                 <NewPlantButton />
               </>
@@ -364,7 +333,7 @@ export default function MyPlantsPage() {
   TODO: Performance and UX improvements implemented:
   - ✅ Added useMemo for filteredPlants (prevents unnecessary re-filtering)
   - ✅ Added useCallback for all handlers (prevents child re-renders)  
-  - ✅ Extracted constants (FILTER_TYPES, CATEGORIES, ITEMS_PER_PAGE)
+  - ✅ Extracted constants (FILTER_TYPES, ITEMS_PER_PAGE)
   - ✅ Improved type safety (removed "as any", enhanced error handling)
   - ✅ Enhanced table with loading="lazy", descriptive alt text, truncate classes
   - ✅ Replaced window.confirm with AlertDialog for UI consistency
@@ -374,7 +343,7 @@ export default function MyPlantsPage() {
   - Extract PlantActionsCell component when action patterns are established
   - Extract DeletePlantDialog component when dialog patterns grow  
   - Implement plant-specific business logic to custom hook (usePlantCrud)
-  - Add plant categories and status filters when requirements grow
+  - Add plant and status filters when requirements grow
   - Implement optimistic updates for better UX
   - Consider bulk operations (delete multiple, export) if needed by users
   - Add plant search with fuzzy matching or tags

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Leaf } from "lucide-react";
 import { supabase } from "@/services/supabaseClient";
 import type { Database } from "@/types/supabase";
+import { LoadingState } from "@/components/common/LoadingState";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
@@ -77,9 +78,7 @@ export function UserDetailsModal({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
-          <div className="p-8 text-center text-muted-foreground">
-            Cargando usuario...
-          </div>
+          <LoadingState className="p-8" />
         </DialogContent>
       </Dialog>
     );

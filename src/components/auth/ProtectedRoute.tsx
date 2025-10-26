@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/services/supabaseClient";
+import { LoadingState } from "@/components/common/LoadingState";
 
 interface Props {
   children: React.ReactNode;
@@ -35,7 +36,7 @@ export default function ProtectedRoute({ children }: Props) {
     };
   }, []);
 
-  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (loading) return <LoadingState className="p-6" />;
 
   // 🔓 Rutas públicas: login/signup
   if (isPublicRoute) {

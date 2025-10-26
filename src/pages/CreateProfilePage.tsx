@@ -3,6 +3,7 @@ import { supabase } from "@/services/supabaseClient";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { showSuccess, showError } from "@/services/toastService";
 import { useNavigate } from "react-router-dom";
 import { useProfileForm, type ProfileFormData } from "@/hooks/useProfileForm";
@@ -122,8 +123,9 @@ export default function CreateProfilePage() {
           <Button
             onClick={handleSave}
             disabled={saving || !isValid}
-            className="w-full mt-4"
+            className="w-full mt-4 flex items-center justify-center gap-2"
           >
+            {saving && <Spinner className="w-4 h-4" />}
             {saving ? "Saving..." : "Save Profile"}
           </Button>
         </div>

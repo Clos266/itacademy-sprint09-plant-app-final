@@ -12,6 +12,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ImageUploader } from "@/components/common/ImageUploader"; // 👈 new generic uploader
 import { useState } from "react";
+import { LoadingState } from "@/components/common/LoadingState";
 
 interface ProfileModalProps {
   open: boolean;
@@ -33,9 +34,7 @@ export function ProfileModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-6 rounded-2xl overflow-hidden">
         {loading ? (
-          <div className="p-6 text-center text-muted-foreground">
-            Loading profile...
-          </div>
+          <LoadingState className="p-6" />
         ) : user ? (
           <>
             <DialogHeader className="text-center space-y-1 mb-4">

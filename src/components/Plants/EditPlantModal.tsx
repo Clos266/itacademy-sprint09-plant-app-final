@@ -42,7 +42,8 @@ export function EditPlantModal({
       onOpenChange={onOpenChange}
       title="Edit Plant"
       onConfirm={handleSubmit}
-      confirmLabel={uploading ? "Uploading..." : "Save Changes"}
+      loading={uploading}
+      loadingText="Uploading..."
     >
       {/* 🖼️ Cambiar imagen */}
 

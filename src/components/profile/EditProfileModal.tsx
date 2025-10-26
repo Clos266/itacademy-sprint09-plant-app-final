@@ -15,6 +15,8 @@ import { ImageUploader } from "@/components/common/ImageUploader";
 import { showSuccess, showError } from "@/services/toastService";
 import { useProfileForm, type ProfileFormData } from "@/hooks/useProfileForm";
 import type { Database } from "@/types/supabase";
+import { LoadingState } from "@/components/common/LoadingState";
+import { Spinner } from "@/components/ui/spinner";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -132,9 +134,7 @@ export function EditProfileModal({
         </DialogHeader>
 
         {loading ? (
-          <p className="text-center text-muted-foreground py-6">
-            Loading profile...
-          </p>
+          <LoadingState className="py-6" />
         ) : (
           <>
             <div className="flex flex-col items-center gap-3 mt-4 mb-6">
@@ -196,7 +196,12 @@ export function EditProfileModal({
               >
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={saving || !isValid}>
+              <Button
+                onClick={handleSave}
+                disabled={saving || !isValid}
+                className="flex items-center justify-center gap-2"
+              >
+                {saving && <Spinner className="w-4 h-4" />}
                 {saving ? "Saving..." : "Save"}
               </Button>
             </div>

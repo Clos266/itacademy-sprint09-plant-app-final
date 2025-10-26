@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FilterBar } from "@/components/common/FilterBar";
 import { SearchInput } from "@/components/common/SearchInput";
 import { MapPin, CalendarDays } from "lucide-react";
-import { Spinner } from "@/components/ui/spinner";
+import { LoadingState } from "@/components/common/LoadingState";
 import { NewEventButton } from "@/components/Events/NewEventModal";
 import { NewSwapPointButton } from "@/components/swappoints/NewSwapPointModal";
 import { fetchEvents } from "@/services/eventService";
@@ -146,10 +146,7 @@ export default function EventsPage() {
 
         <TabsContent value="events">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-              <Spinner className="w-6 h-6 mb-2" />
-              <span>Loading events...</span>
-            </div>
+            <LoadingState message="Loading events..." className="py-10" />
           ) : (
             <EventGrid
               data={filteredEvents}
@@ -163,10 +160,7 @@ export default function EventsPage() {
 
         <TabsContent value="swappoints">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-              <Spinner className="w-6 h-6 mb-2" />
-              <span>Loading swap points...</span>
-            </div>
+            <LoadingState message="Loading swap points..." className="py-10" />
           ) : (
             <SwappointGrid
               data={filteredSwappoints}

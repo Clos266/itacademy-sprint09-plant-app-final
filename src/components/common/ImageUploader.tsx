@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/services/supabaseClient";
 import { Upload, Image as ImageIcon } from "lucide-react";
+import { LoadingState } from "@/components/common/LoadingState";
 
 interface ImageUploaderProps {
   bucket: "avatars" | "plants" | "events" | "swap_points";
@@ -90,9 +91,7 @@ export function ImageUploader({
         />
       </div>
 
-      {uploading && (
-        <p className="text-xs text-muted-foreground mt-1">Uploading...</p>
-      )}
+      {uploading && <LoadingState size="sm" className="mt-1" />}
     </div>
   );
 }

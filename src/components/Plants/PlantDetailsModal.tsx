@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin } from "lucide-react";
 import type { Database } from "@/types/supabase";
 import { getPlantById } from "@/services/plantCrudService";
+import { LoadingState } from "@/components/common/LoadingState";
 
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -64,9 +65,7 @@ export function PlantDetailsModal({
         </VisuallyHidden>
 
         {loading ? (
-          <div className="p-6 text-center text-muted-foreground">
-            Loading...
-          </div>
+          <LoadingState className="p-6" />
         ) : !plant ? (
           <div className="p-6 text-center text-destructive">
             Could not load this plant.

@@ -7,7 +7,7 @@ import { Leaf, MapPin } from "lucide-react";
 import { FilterBar } from "@/components/common/FilterBar";
 import { SearchInput } from "@/components/common/SearchInput";
 import { ProposeSwapModal } from "@/components/swaps/ProposeSwapModal";
-import { Spinner } from "@/components/ui/spinner";
+import { LoadingState } from "@/components/common/LoadingState";
 import { showError, showWarning } from "@/services/toastService";
 import { fetchPlants } from "@/services/plantCrudService";
 import { supabase } from "@/services/supabaseClient";
@@ -99,12 +99,7 @@ export default function HomePage() {
   );
 
   if (loading) {
-    return (
-      <div className="flex flex-col justify-center items-center h-[70vh] text-muted-foreground">
-        <Spinner className="w-6 h-6 mb-4" />
-        <p>Loading plants...</p>
-      </div>
-    );
+    return <LoadingState className="h-[70vh]" />;
   }
 
   return (

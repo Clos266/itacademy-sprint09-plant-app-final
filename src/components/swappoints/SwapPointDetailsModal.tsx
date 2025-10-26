@@ -17,6 +17,7 @@ import { MapPin } from "lucide-react";
 import type { Database } from "@/types/supabase";
 import { supabase } from "@/services/supabaseClient";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { LoadingState } from "@/components/common/LoadingState";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
@@ -124,9 +125,7 @@ export function SwapPointDetailsModal({
 
         <ScrollArea className="max-h-[85vh] p-4">
           {loading ? (
-            <div className="p-6 text-center text-muted-foreground">
-              Loading...
-            </div>
+            <LoadingState className="p-6" />
           ) : !point ? (
             <div className="p-6 text-center text-destructive">
               Could not load this swap point.

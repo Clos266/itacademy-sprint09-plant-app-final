@@ -96,7 +96,8 @@ export function NewPlantButton() {
         onOpenChange={setOpen}
         title="Add New Plant"
         onConfirm={handleSave}
-        confirmLabel={uploading ? "Uploading..." : "Save"}
+        loading={uploading}
+        loadingText="Uploading..."
       >
         {/* 📏 Ajuste de ancho para que sea más estrecho en escritorio */}
         <div className="mx-auto max-w-md sm:max-w-lg lg:max-w-xl max-h-[64vh] overflow-y-auto p-0">

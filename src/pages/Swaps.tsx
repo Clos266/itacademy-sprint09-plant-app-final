@@ -18,7 +18,7 @@ import { usePagination } from "@/hooks/usePagination";
 import { markSwapAsCompletedByUser } from "@/services/swapCrudService";
 import { showSuccess, showError } from "@/services/toastService";
 import type { Database } from "@/types/supabase";
-import { Spinner } from "@/components/ui/spinner";
+import { LoadingState } from "@/components/common/LoadingState";
 
 type Swap = Database["public"]["Tables"]["swaps"]["Row"];
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
@@ -169,12 +169,7 @@ export default function SwapsPage() {
   );
 
   if (loading) {
-    return (
-      <div className="flex flex-col justify-center items-center h-[70vh] text-muted-foreground">
-        <Spinner className="w-6 h-6 mb-4" />
-        <p>Loading swaps...</p>
-      </div>
-    );
+    return <LoadingState className="h-[70vh]" />;
   }
 
   return (
