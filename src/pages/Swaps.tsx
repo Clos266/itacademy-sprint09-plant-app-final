@@ -1,11 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PaginatedTable } from "@/components/common/PaginatedTable";
 import { Toggle } from "@/components/ui/toggle";
@@ -13,6 +8,7 @@ import { ArrowUpDown } from "lucide-react";
 import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
 import { UserDetailsModal } from "@/components/Users/UserDetailsModal";
 import { SwapInfoModal } from "@/components/swaps/SwapInfoModal";
+import { SearchInput } from "@/components/common/SearchInput";
 import { useSwaps } from "@/hooks/useSwaps";
 import { usePagination } from "@/hooks/usePagination";
 import { markSwapAsCompletedByUser } from "@/services/swapCrudService";
@@ -58,6 +54,7 @@ export default function SwapsPage() {
   const [activeStatuses, setActiveStatuses] = useState<SwapStatus[]>([]);
   const [sortColumn, setSortColumn] = useState<keyof Swap>("created_at");
   const [sortDir, setSortDir] = useState<SortDirection>("desc");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // TODO: Extract to useSwapsLogic hook - Memoized status filter toggle
   const toggleStatus = useCallback((status: SwapStatus) => {
@@ -66,6 +63,15 @@ export default function SwapsPage() {
         ? prev.filter((s) => s !== status)
         : [...prev, status]
     );
+  }, []);
+
+  // Search handlers
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+  }, []);
+
+  const handleSearchClear = useCallback(() => {
+    setSearchQuery("");
   }, []);
 
   // TODO: Extract to useSwapsLogic hook - Memoized sort handler with validation
@@ -89,12 +95,34 @@ export default function SwapsPage() {
 
   // TODO: Extract to useSwapsLogic hook - Memoized filtering and sorting for performance
   const filteredAndSortedSwaps = useMemo(() => {
-    // TODO: Add search filter when search functionality is needed
-    const filtered = swaps.filter(
-      (swap) =>
-        activeStatuses.length === 0 ||
+    let filtered = swaps;
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((swap) => {
+        const receiverUsername = swap.receiver?.username?.toLowerCase() || "";
+        const senderPlantName =
+          swap.senderPlant?.nombre_comun?.toLowerCase() || "";
+        const receiverPlantName =
+          swap.receiverPlant?.nombre_comun?.toLowerCase() || "";
+        const status = swap.status.toLowerCase();
+
+        return (
+          receiverUsername.includes(query) ||
+          senderPlantName.includes(query) ||
+          receiverPlantName.includes(query) ||
+          status.includes(query)
+        );
+      });
+    }
+
+    // Apply status filter
+    if (activeStatuses.length > 0) {
+      filtered = filtered.filter((swap) =>
         activeStatuses.includes(swap.status as SwapStatus)
-    );
+      );
+    }
 
     return filtered.sort((a, b) => {
       const A = a[sortColumn];
@@ -122,7 +150,7 @@ export default function SwapsPage() {
 
       return 0;
     });
-  }, [swaps, activeStatuses, sortColumn, sortDir]);
+  }, [swaps, activeStatuses, sortColumn, sortDir, searchQuery]);
 
   // Use pagination hook instead of manual pagination
   const { page, totalPages, paginated, goToPage } = usePagination(
@@ -179,29 +207,36 @@ export default function SwapsPage() {
       </PageHeader>
 
       <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>My Plant Swaps</CardTitle>
-          <CardDescription>View, accept, or propose swaps</CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1 max-w-md">
+            <SearchInput
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onClear={handleSearchClear}
+              placeholder="Search swaps by user, plants, or status..."
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {SWAP_STATUSES.map((status) => (
+              <Toggle
+                key={status}
+                pressed={activeStatuses.includes(status)}
+                onPressedChange={() => toggleStatus(status)}
+                className={`transition-all duration-200 ${
+                  activeStatuses.includes(status)
+                    ? "bg-primary text-white shadow-md"
+                    : "border border-muted-foreground text-muted-foreground hover:bg-muted hover:border-primary"
+                }`}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </Toggle>
+            ))}
+          </div>
         </CardHeader>
       </Card>
 
       {/* TODO: Extract StatusFilter component when filters grow */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {SWAP_STATUSES.map((status) => (
-          <Toggle
-            key={status}
-            pressed={activeStatuses.includes(status)}
-            onPressedChange={() => toggleStatus(status)}
-            className={`transition-all duration-200 ${
-              activeStatuses.includes(status)
-                ? "bg-primary text-white shadow-md"
-                : "border border-muted-foreground text-muted-foreground hover:bg-muted hover:border-primary"
-            }`}
-          >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </Toggle>
-        ))}
-      </div>
 
       {/* TODO: Extract SwapsTable component when table logic grows complex */}
 
