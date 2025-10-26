@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import {
   Card,
@@ -14,60 +14,165 @@ import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
 import { UserDetailsModal } from "@/components/Users/UserDetailsModal";
 import { SwapInfoModal } from "@/components/swaps/SwapInfoModal";
 import { useSwaps } from "@/hooks/useSwaps";
+import { usePagination } from "@/hooks/usePagination";
+import { markSwapAsCompletedByUser } from "@/services/swapCrudService";
+import { showSuccess, showError } from "@/services/toastService";
 import type { Database } from "@/types/supabase";
 import { Spinner } from "@/components/ui/spinner";
 
 type Swap = Database["public"]["Tables"]["swaps"]["Row"];
+type Plant = Database["public"]["Tables"]["plants"]["Row"];
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type SwapStatus = "pending" | "accepted" | "rejected" | "completed";
 
+interface FullSwap extends Swap {
+  senderPlant?: Plant | null;
+  receiverPlant?: Plant | null;
+  receiver?: Profile | null;
+}
+
+// TODO: Extract to separate types file when growing
+type SortableColumn = (typeof SORTABLE_COLUMNS)[number];
+type SortDirection = "asc" | "desc";
+
+const ITEMS_PER_PAGE = 5;
+const SWAP_STATUSES: SwapStatus[] = [
+  "pending",
+  "accepted",
+  "rejected",
+  "completed",
+];
+const SORTABLE_COLUMNS = ["created_at", "receiver_id", "status"] as const;
+
 export default function SwapsPage() {
+  // TODO: Extract to useSwapsLogic hook - Core data and actions
   const { swaps, loading, reload, userId, username } = useSwaps();
+
+  // TODO: Extract to useModalsState hook - Modal visibility states
   const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedSwap, setSelectedSwap] = useState<any | null>(null);
+  const [selectedSwap, setSelectedSwap] = useState<FullSwap | null>(null);
   const [openSwapInfo, setOpenSwapInfo] = useState(false);
+
+  // Filter and sort states
   const [activeStatuses, setActiveStatuses] = useState<SwapStatus[]>([]);
   const [sortColumn, setSortColumn] = useState<keyof Swap>("created_at");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [sortDir, setSortDir] = useState<SortDirection>("desc");
 
-  const toggleStatus = (s: SwapStatus) =>
+  // TODO: Extract to useSwapsLogic hook - Memoized status filter toggle
+  const toggleStatus = useCallback((status: SwapStatus) => {
     setActiveStatuses((prev) =>
-      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status]
+    );
+  }, []);
+
+  // TODO: Extract to useSwapsLogic hook - Memoized sort handler with validation
+  const handleSort = useCallback(
+    (column: keyof Swap) => {
+      // Validate if column is sortable using SORTABLE_COLUMNS
+      if (!SORTABLE_COLUMNS.includes(column as SortableColumn)) {
+        console.warn(`Column '${String(column)}' is not sortable`);
+        return;
+      }
+
+      if (column === sortColumn) {
+        setSortDir((direction) => (direction === "asc" ? "desc" : "asc"));
+      } else {
+        setSortColumn(column);
+        setSortDir("asc");
+      }
+    },
+    [sortColumn]
+  );
+
+  // TODO: Extract to useSwapsLogic hook - Memoized filtering and sorting for performance
+  const filteredAndSortedSwaps = useMemo(() => {
+    // TODO: Add search filter when search functionality is needed
+    const filtered = swaps.filter(
+      (swap) =>
+        activeStatuses.length === 0 ||
+        activeStatuses.includes(swap.status as SwapStatus)
     );
 
-  const handleSort = (col: keyof Swap) => {
-    if (col === sortColumn) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else {
-      setSortColumn(col);
-      setSortDir("asc");
-    }
-  };
+    return filtered.sort((a, b) => {
+      const A = a[sortColumn];
+      const B = b[sortColumn];
 
-  const filtered = swaps.filter(
-    (s) =>
-      activeStatuses.length === 0 ||
-      activeStatuses.includes(s.status as SwapStatus)
+      // Handle different data types properly
+      if (typeof A === "string" && typeof B === "string") {
+        return sortDir === "asc" ? A.localeCompare(B) : B.localeCompare(A);
+      }
+
+      if (typeof A === "number" && typeof B === "number") {
+        return sortDir === "asc" ? A - B : B - A;
+      }
+
+      // Handle date strings (created_at)
+      if (
+        sortColumn === "created_at" &&
+        typeof A === "string" &&
+        typeof B === "string"
+      ) {
+        const dateA = new Date(A).getTime();
+        const dateB = new Date(B).getTime();
+        return sortDir === "asc" ? dateA - dateB : dateB - dateA;
+      }
+
+      return 0;
+    });
+  }, [swaps, activeStatuses, sortColumn, sortDir]);
+
+  // Use pagination hook instead of manual pagination
+  const { page, totalPages, paginated, goToPage } = usePagination(
+    filteredAndSortedSwaps,
+    ITEMS_PER_PAGE
   );
 
-  const sorted = [...filtered].sort((a, b) => {
-    const A = a[sortColumn];
-    const B = b[sortColumn];
-    if (typeof A === "string" && typeof B === "string") {
-      return sortDir === "asc" ? A.localeCompare(B) : B.localeCompare(A);
-    }
-    return 0;
-  });
-  const ITEMS_PER_PAGE = 5;
-  const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE);
-  const paginated = sorted.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
+  // TODO: Extract to shared component - Memoized sortable header generator
+  const createSortableHeader = useCallback(
+    (column: keyof Swap, label: string) => (
+      <button
+        type="button"
+        className="flex items-center cursor-pointer hover:text-primary transition-colors duration-200"
+        onClick={() => handleSort(column)}
+      >
+        {label}
+        <ArrowUpDown
+          className={`w-4 h-4 ml-1 transition-colors duration-200 ${
+            sortColumn === column ? "text-primary" : "text-muted-foreground"
+          }`}
+        />
+      </button>
+    ),
+    [handleSort, sortColumn]
   );
+
+  // TODO: Extract to useSwapsLogic hook - Memoized completion handler
+  const handleMarkAsCompleted = useCallback(
+    async (swapId: number) => {
+      try {
+        if (!userId) {
+          showError("User not logged in");
+          return;
+        }
+        await markSwapAsCompletedByUser(swapId, userId);
+        showSuccess("Marked your side as completed");
+        reload();
+      } catch (err) {
+        console.error("Error marking swap as completed:", err);
+        showError("Failed to update completion status");
+      }
+    },
+    [userId, reload]
+  );
+
   if (loading) {
     return (
-      <div className="p-8 text-center text-muted-foreground">
-        <Spinner className="w-6 h-6 mb-2" />
+      <div className="flex flex-col justify-center items-center h-[70vh] text-muted-foreground">
+        <Spinner className="w-6 h-6 mb-4" />
+        <p>Loading swaps...</p>
       </div>
     );
   }
@@ -75,95 +180,99 @@ export default function SwapsPage() {
   return (
     <>
       <PageHeader>
-        <PageHeaderHeading>🔁 Plant Swaps</PageHeaderHeading>
+        <PageHeaderHeading>Plant Swaps</PageHeaderHeading>
       </PageHeader>
 
       <Card className="mb-4">
         <CardHeader>
           <CardTitle>My Plant Swaps</CardTitle>
-          <CardDescription>View, accept, or propose swaps 🌱</CardDescription>
+          <CardDescription>View, accept, or propose swaps</CardDescription>
         </CardHeader>
       </Card>
 
-      {/* 🔘 Filters */}
+      {/* TODO: Extract StatusFilter component when filters grow */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {(["pending", "accepted", "rejected", "completed"] as SwapStatus[]).map(
-          (s) => (
-            <Toggle
-              key={s}
-              pressed={activeStatuses.includes(s)}
-              onPressedChange={() => toggleStatus(s)}
-              className={`${
-                activeStatuses.includes(s)
-                  ? "bg-primary text-white"
-                  : "border border-muted-foreground text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {s[0].toUpperCase() + s.slice(1)}
-            </Toggle>
-          )
-        )}
+        {SWAP_STATUSES.map((status) => (
+          <Toggle
+            key={status}
+            pressed={activeStatuses.includes(status)}
+            onPressedChange={() => toggleStatus(status)}
+            className={`transition-all duration-200 ${
+              activeStatuses.includes(status)
+                ? "bg-primary text-white shadow-md"
+                : "border border-muted-foreground text-muted-foreground hover:bg-muted hover:border-primary"
+            }`}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </Toggle>
+        ))}
       </div>
 
-      {/* 🧾 Table */}
+      {/* TODO: Extract SwapsTable component when table logic grows complex */}
 
       <PaginatedTable
         data={paginated}
         totalPages={totalPages}
-        onPageChange={setPage}
+        onPageChange={goToPage}
         page={page}
         columns={[
           {
             key: "senderPlant",
             header: "Your Plant",
-            render: (swap: any) => (
+            render: (swap: FullSwap) => (
               <div className="flex items-center gap-3">
                 <img
                   src={swap.senderPlant?.image_url || "/imagenotfound.jpeg"}
-                  alt={swap.senderPlant?.nombre_comun}
-                  className="w-10 h-10 rounded-lg object-cover cursor-pointer hover:scale-105 transition-transform"
-                  onClick={() => setSelectedPlantId(swap.senderPlant?.id)}
+                  alt={swap.senderPlant?.nombre_comun || "Plant image"}
+                  loading="lazy"
+                  className="w-10 h-10 rounded-lg object-cover cursor-pointer hover:scale-105 transition-transform duration-200"
+                  onClick={() =>
+                    setSelectedPlantId(swap.senderPlant?.id || null)
+                  }
                 />
-                <span>{swap.senderPlant?.nombre_comun}</span>
+                <span className="truncate max-w-[120px]">
+                  {swap.senderPlant?.nombre_comun || "Unknown Plant"}
+                </span>
               </div>
             ),
           },
           {
             key: "receiverPlant",
             header: "Other Plant",
-            render: (swap: any) => (
+            render: (swap: FullSwap) => (
               <div className="flex items-center gap-3">
                 <img
                   src={swap.receiverPlant?.image_url || "/imagenotfound.jpeg"}
-                  alt={swap.receiverPlant?.nombre_comun}
-                  className="w-10 h-10 rounded-lg object-cover cursor-pointer hover:scale-105 transition-transform"
-                  onClick={() => setSelectedPlantId(swap.receiverPlant?.id)}
+                  alt={swap.receiverPlant?.nombre_comun || "Plant image"}
+                  loading="lazy"
+                  className="w-10 h-10 rounded-lg object-cover cursor-pointer hover:scale-105 transition-transform duration-200"
+                  onClick={() =>
+                    setSelectedPlantId(swap.receiverPlant?.id || null)
+                  }
                 />
-                <span>{swap.receiverPlant?.nombre_comun}</span>
+                <span className="truncate max-w-[120px]">
+                  {swap.receiverPlant?.nombre_comun || "Unknown Plant"}
+                </span>
               </div>
             ),
           },
           {
             key: "receiver",
-            header: (
-              <button
-                type="button"
-                className="flex items-center cursor-pointer"
-                onClick={() => handleSort("receiver_id")}
-              >
-                User <ArrowUpDown className="w-4 h-4 ml-1" />
-              </button>
+            header: createSortableHeader(
+              "receiver_id",
+              "User"
             ) as unknown as string,
-            render: (swap: any) => (
+            render: (swap: FullSwap) => (
               <div className="flex items-center gap-2">
                 <img
                   src={swap.receiver?.avatar_url || "/avatar-placeholder.png"}
-                  alt={swap.receiver?.username ?? "User"}
-                  className="w-8 h-8 rounded-full object-cover cursor-pointer hover:scale-105 transition-transform"
-                  onClick={() => setSelectedUserId(swap.receiver?.id)}
+                  alt={swap.receiver?.username || "User avatar"}
+                  loading="lazy"
+                  className="w-8 h-8 rounded-full object-cover cursor-pointer hover:scale-105 transition-transform duration-200"
+                  onClick={() => setSelectedUserId(swap.receiver?.id || null)}
                 />
-                <span className="hidden sm:inline">
-                  @{swap.receiver?.username}
+                <span className="hidden sm:inline truncate max-w-[100px]">
+                  @{swap.receiver?.username || "Unknown User"}
                 </span>
               </div>
             ),
@@ -171,9 +280,9 @@ export default function SwapsPage() {
           {
             key: "actions",
             header: "Actions",
-            render: (swap: any) => (
+            render: (swap: FullSwap) => (
+              // TODO: Extract ActionsCell component when table grows
               <div className="flex gap-2">
-                {/* 👁 View button */}
                 <Button
                   size="sm"
                   variant="outline"
@@ -181,48 +290,28 @@ export default function SwapsPage() {
                     setSelectedSwap(swap);
                     setOpenSwapInfo(true);
                   }}
+                  className="transition-colors duration-200"
                 >
                   View
                 </Button>
 
-                {/* ✅ Mark as Completed */}
                 <Button
                   size="sm"
                   variant={
                     swap.status === "completed" ? "outline" : "secondary"
                   }
                   disabled={swap.status !== "accepted"}
-                  onClick={async () => {
-                    try {
-                      const { markSwapAsCompletedByUser } = await import(
-                        "@/services/swapCrudService"
-                      );
-                      const { showSuccess } = await import(
-                        "@/services/toastService"
-                      );
-                      if (!userId) {
-                        const { showError } = await import(
-                          "@/services/toastService"
-                        );
-                        showError("User not logged in");
-                        return;
-                      }
-                      await markSwapAsCompletedByUser(swap.id, userId);
-
-                      showSuccess("Marked your side as completed ");
-                      reload();
-                    } catch (err) {
-                      console.error(err);
-                      const { showError } = await import(
-                        "@/services/toastService"
-                      );
-                      showError("Failed to update completion status");
-                    }
-                  }}
+                  onClick={() => handleMarkAsCompleted(swap.id)}
+                  className="transition-colors duration-200"
+                  title={
+                    swap.status === "completed"
+                      ? "Already completed"
+                      : swap.status !== "accepted"
+                      ? "Only accepted swaps can be marked as completed"
+                      : "Mark as completed"
+                  }
                 >
-                  {swap.status === "completed"
-                    ? "Completed "
-                    : "Mark as Completed"}
+                  {swap.status === "completed" ? "Completed" : "Complete"}
                 </Button>
               </div>
             ),
@@ -230,7 +319,7 @@ export default function SwapsPage() {
         ]}
       />
 
-      {/* 🌱 Modales */}
+      {/* TODO: Extract modal management to useModalsState hook when modal count increases */}
       <PlantDetailsModal
         open={!!selectedPlantId}
         onOpenChange={(open) => !open && setSelectedPlantId(null)}
