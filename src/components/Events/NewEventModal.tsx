@@ -113,7 +113,7 @@ export function NewEventButton() {
   return (
     <>
       <Button onClick={() => setOpen(true)}>
-        <Plus className="mr-1 h-4 w-4" /> New Event
+        <Plus className="mr-1 h-4 w-4" />
       </Button>
 
       <ModalDialog

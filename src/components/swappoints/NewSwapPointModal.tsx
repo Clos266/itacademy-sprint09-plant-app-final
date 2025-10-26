@@ -173,7 +173,7 @@ export function NewSwapPointButton() {
   return (
     <>
       <Button onClick={() => setOpen(true)}>
-        <Plus className="mr-1 h-4 w-4" /> New
+        <Plus className="mr-1 justify-center h-4 w-4" />
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
