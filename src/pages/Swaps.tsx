@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { FilterBar } from "@/components/common/FilterBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PaginatedTable } from "@/components/common/PaginatedTable";
@@ -16,11 +17,20 @@ import { updateSwapStatusWithAvailability } from "@/services/swapCrudService";
 import { showSuccess, showError } from "@/services/toastService";
 import type { Database } from "@/types/supabase";
 import { LoadingState } from "@/components/common/LoadingState";
+import { PAGINATION_SIZES } from "@/constants/pagination";
+import {
+  SWAP_STATUSES,
+  SWAP_STATUS_LIST,
+  SWAP_STATUS_LABELS,
+  type SwapStatus,
+} from "@/constants/status";
+import { DOMAIN_FILTER_TYPES } from "@/constants/filterTypes";
+import { SPACING } from "@/constants/layouts";
 
 type Swap = Database["public"]["Tables"]["swaps"]["Row"];
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-type SwapStatus = "new" | "accepted" | "declined" | "completed";
+// Using centralized SwapStatus type from constants/status.ts
 
 interface FullSwap extends Swap {
   senderPlant?: Plant | null;
@@ -29,25 +39,20 @@ interface FullSwap extends Swap {
 }
 
 // TODO: Extract to separate types file when growing
-type SortableColumn = (typeof SORTABLE_COLUMNS)[number];
+type SortableColumn = (typeof DOMAIN_FILTER_TYPES.SWAPS.SORT_BY)[number];
 type SortDirection = "asc" | "desc";
 
-const ITEMS_PER_PAGE = 5;
-const SWAP_STATUSES: SwapStatus[] = [
-  "new",
-  "accepted",
-  "declined",
-  "completed",
-];
-const SORTABLE_COLUMNS = ["created_at", "receiver_id", "status"] as const;
-
-// Helper function to map database status to UI status
+// Helper function to map database status to UI status using centralized constants
 const mapSwapStatus = (dbStatus: string): SwapStatus => {
   switch (dbStatus) {
     case "pending":
-      return "new";
+      return SWAP_STATUSES.NEW;
     case "rejected":
-      return "declined";
+      return SWAP_STATUSES.DECLINED;
+    case "accepted":
+      return SWAP_STATUSES.ACCEPTED;
+    case "completed":
+      return SWAP_STATUSES.COMPLETED;
     default:
       return dbStatus as SwapStatus;
   }
@@ -130,8 +135,10 @@ export default function SwapsPage() {
   // TODO: Extract to useSwapsLogic hook - Memoized sort handler with validation
   const handleSort = useCallback(
     (column: keyof Swap) => {
-      // Validate if column is sortable using SORTABLE_COLUMNS
-      if (!SORTABLE_COLUMNS.includes(column as SortableColumn)) {
+      // Validate if column is sortable using centralized constants
+      if (
+        !DOMAIN_FILTER_TYPES.SWAPS.SORT_BY.includes(column as SortableColumn)
+      ) {
         console.warn(`Column '${String(column)}' is not sortable`);
         return;
       }
@@ -208,7 +215,7 @@ export default function SwapsPage() {
   // Use pagination hook instead of manual pagination
   const { page, totalPages, paginated, goToPage } = usePagination(
     filteredAndSortedSwaps,
-    ITEMS_PER_PAGE
+    PAGINATION_SIZES.TABLE
   );
 
   // TODO: Extract to shared component - Memoized sortable header generator
@@ -235,39 +242,42 @@ export default function SwapsPage() {
   }
 
   return (
-    <>
+    <div className={SPACING.PAGE.SECTION_GAP}>
       <PageHeader>
         <PageHeaderHeading>Plant Swaps</PageHeaderHeading>
       </PageHeader>
 
-      <Card className="mb-4">
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex-1 max-w-md">
-            <SearchInput
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onClear={handleSearchClear}
-              placeholder="Search swaps by user, plants, or status..."
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {SWAP_STATUSES.map((status) => (
-              <Toggle
-                key={status}
-                pressed={activeStatuses.includes(status)}
-                onPressedChange={() => toggleStatus(status)}
-                className={`transition-all duration-200 ${
-                  activeStatuses.includes(status)
-                    ? "bg-primary text-white shadow-md"
-                    : "border border-muted-foreground text-muted-foreground hover:bg-muted hover:border-primary"
-                }`}
-              >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </Toggle>
-            ))}
-          </div>
-        </CardHeader>
+      <Card>
+        <CardContent>
+          <FilterBar
+            searchComponent={
+              <SearchInput
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onClear={handleSearchClear}
+                placeholder="Search swaps by user, plants, or status..."
+              />
+            }
+            filters={
+              <>
+                {SWAP_STATUS_LIST.map((status) => (
+                  <Toggle
+                    key={status}
+                    pressed={activeStatuses.includes(status)}
+                    onPressedChange={() => toggleStatus(status)}
+                    className={`transition-all duration-200 ${
+                      activeStatuses.includes(status)
+                        ? "bg-primary text-white shadow-md"
+                        : "border border-muted-foreground text-muted-foreground hover:bg-muted hover:border-primary"
+                    }`}
+                  >
+                    {SWAP_STATUS_LABELS[status]}
+                  </Toggle>
+                ))}
+              </>
+            }
+          />
+        </CardContent>
       </Card>
 
       {/* TODO: Extract StatusFilter component when filters grow */}
@@ -347,7 +357,7 @@ export default function SwapsPage() {
             render: (swap: FullSwap) => {
               // TODO: Extract to SwapActionsCell component
               const uiStatus = mapSwapStatus(swap.status);
-              const isNewSwap = uiStatus === "new";
+              const isNewSwap = uiStatus === SWAP_STATUSES.NEW;
               const isNewReceiver = isNewSwap && swap.receiver_id === userId;
 
               return (
@@ -396,15 +406,15 @@ export default function SwapsPage() {
             render: (swap: FullSwap) => {
               const uiStatus = mapSwapStatus(swap.status);
               const badgeVariant = {
-                new: "secondary",
-                accepted: "default",
-                declined: "destructive",
-                completed: "outline",
+                [SWAP_STATUSES.NEW]: "secondary",
+                [SWAP_STATUSES.ACCEPTED]: "default",
+                [SWAP_STATUSES.DECLINED]: "destructive",
+                [SWAP_STATUSES.COMPLETED]: "outline",
               } as const;
 
               return (
                 <Badge variant={badgeVariant[uiStatus]} className="capitalize">
-                  {uiStatus}
+                  {SWAP_STATUS_LABELS[uiStatus]}
                 </Badge>
               );
             },
@@ -433,6 +443,6 @@ export default function SwapsPage() {
         onStatusChange={reload}
         username={username || ""}
       />
-    </>
+    </div>
   );
 }

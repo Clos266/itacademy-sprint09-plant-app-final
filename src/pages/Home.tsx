@@ -1,11 +1,9 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Leaf, MapPin } from "lucide-react";
-import { FilterBar } from "@/components/common/FilterBar";
-import { SearchInput } from "@/components/common/SearchInput";
+import { EnhancedFilterBar } from "@/components/common/FilterBar";
 import { ProposeSwapModal } from "@/components/swaps/ProposeSwapModal";
 import { LoadingState } from "@/components/common/LoadingState";
 import { showError, showWarning } from "@/services/toastService";
@@ -14,6 +12,13 @@ import { supabase } from "@/services/supabaseClient";
 import type { Database } from "@/types/supabase";
 import { PaginatedCards } from "@/components/common/PaginatedCards";
 import { usePagination } from "@/hooks/usePagination";
+import { useFiltering } from "@/hooks/useFiltering";
+import { FilteringPresets } from "@/config/filteringPresets";
+import { SEARCH_PLACEHOLDERS } from "@/constants/filters";
+import { PAGINATION_SIZES } from "@/constants/pagination";
+import { GRID_CONFIGS, SPACING } from "@/constants/layouts";
+import { DOMAIN_FILTER_TYPES } from "@/constants/filterTypes";
+import type { FilterConfig } from "@/types/filtering";
 
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -21,19 +26,48 @@ interface FullPlant extends Plant {
   profile?: Profile | null;
 }
 
-const ITEMS_PER_PAGE = 9;
-const FILTER_TYPES = ["all", "available", "unavailable"] as const;
+// UI configuration for the filter bar (using centralized constants)
+const PLANT_FILTER_CONFIG: FilterConfig[] = [
+  {
+    key: "search",
+    type: "text",
+    placeholder: SEARCH_PLACEHOLDERS.plants,
+  },
+  {
+    key: "availability",
+    type: "status",
+    options: DOMAIN_FILTER_TYPES.PLANTS.STATUS,
+  },
+];
 
 export default function HomePage() {
   const [plants, setPlants] = useState<FullPlant[]>([]);
   const [userPlants, setUserPlants] = useState<FullPlant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState<
-    "all" | "available" | "unavailable"
-  >("available");
-  const [search, setSearch] = useState("");
   const [openSwap, setOpenSwap] = useState(false);
   const [targetPlant, setTargetPlant] = useState<FullPlant | null>(null);
+
+  // Use centralized filtering configuration for plants
+  const {
+    filteredItems: filteredPlants,
+    filters,
+    updateFilter,
+    resetFilters,
+  } = useFiltering(plants, {
+    ...FilteringPresets.plants,
+    searchFields: [
+      ...FilteringPresets.plants.searchFields,
+    ] as (keyof FullPlant)[],
+    defaultSort: {
+      field: FilteringPresets.plants.defaultSort.field as keyof FullPlant,
+      direction: FilteringPresets.plants.defaultSort.direction,
+    },
+  });
+
+  // Initialize availability filter to "available" for better UX
+  useEffect(() => {
+    updateFilter("custom", { availability: "available" });
+  }, [updateFilter]);
 
   useEffect(() => {
     const loadPlants = async () => {
@@ -63,39 +97,10 @@ export default function HomePage() {
     loadPlants();
   }, []);
 
-  const filteredAndSortedPlants = useMemo(() => {
-    const term = search.toLowerCase();
-
-    return plants
-      .filter((plant) => {
-        const matchesSearch =
-          plant.nombre_comun?.toLowerCase().includes(term) ||
-          plant.nombre_cientifico?.toLowerCase().includes(term) ||
-          plant.especie?.toLowerCase().includes(term);
-
-        if (!matchesSearch) return false;
-        if (filterType === "available") return plant.disponible;
-        if (filterType === "unavailable") return !plant.disponible;
-        return true;
-      })
-      .sort((a, b) => {
-        if (a.disponible && !b.disponible) return -1;
-        if (!a.disponible && b.disponible) return 1;
-        return (
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      });
-  }, [plants, search, filterType]);
-
+  // Pagination with filtered results
   const { page, totalPages, paginated, goToPage } = usePagination(
-    filteredAndSortedPlants,
-    ITEMS_PER_PAGE
-  );
-
-  const showingStart = (page - 1) * ITEMS_PER_PAGE + 1;
-  const showingEnd = Math.min(
-    page * ITEMS_PER_PAGE,
-    filteredAndSortedPlants.length
+    filteredPlants,
+    PAGINATION_SIZES.CARDS
   );
 
   if (loading) {
@@ -103,7 +108,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen space-y-6">
+    <div className={`min-h-screen ${SPACING.PAGE.SECTION_GAP}`}>
       <PageHeader>
         <PageHeaderHeading>
           <Leaf className="inline-block w-6 h-6 mr-2 text-primary" />
@@ -111,54 +116,36 @@ export default function HomePage() {
         </PageHeaderHeading>
       </PageHeader>
 
-      {/* Filtro y búsqueda */}
+      {/* Filtering and search */}
       <Card>
         <CardContent>
-          <FilterBar
-            searchComponent={
-              <SearchInput
-                value={search}
-                onChange={(val) => {
-                  setSearch(val);
-                  goToPage(1);
-                }}
-                onClear={() => {
-                  setSearch("");
-                  goToPage(1);
-                }}
-                placeholder="Search plants or species..."
-              />
+          <EnhancedFilterBar
+            config={PLANT_FILTER_CONFIG}
+            values={
+              {
+                search: filters.search,
+                availability:
+                  (filters.custom as Record<string, any>)?.availability ||
+                  "available",
+              } as any
             }
-            filters={
-              <>
-                {FILTER_TYPES.map((type) => (
-                  <Button
-                    key={type}
-                    variant={filterType === type ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setFilterType(type);
-                      goToPage(1);
-                    }}
-                  >
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </Button>
-                ))}
-              </>
-            }
+            onChange={(key, value) => {
+              if (key === "search") {
+                updateFilter("search", value);
+              } else if (key === "availability") {
+                updateFilter("custom", { availability: value });
+              }
+              goToPage(1); // Reset to first page on filter change
+            }}
+            searchPlaceholder={SEARCH_PLACEHOLDERS.plants}
+            showReset
+            onReset={() => {
+              resetFilters();
+              goToPage(1);
+            }}
           />
         </CardContent>
       </Card>
-
-      {/* Info de paginación */}
-      <div className="flex justify-end text-sm text-muted-foreground pr-2">
-        Showing <span className="mx-1 font-medium">{showingStart}</span>–
-        <span className="mx-1 font-medium">{showingEnd}</span> of{" "}
-        <span className="mx-1 font-medium">
-          {filteredAndSortedPlants.length}
-        </span>{" "}
-        plants
-      </div>
 
       <PaginatedCards
         data={paginated}
@@ -166,7 +153,7 @@ export default function HomePage() {
         totalPages={totalPages}
         onPageChange={goToPage}
         emptyMessage="No plants found."
-        renderCard={(plant) => {
+        renderCard={(plant: FullPlant) => {
           const handleCardClick = () => {
             if (userPlants.length === 0) {
               showWarning(
@@ -183,15 +170,17 @@ export default function HomePage() {
           return (
             <Card
               key={plant.id}
-              className="transition-all cursor-pointer overflow-hidden flex flex-col hover:shadow-md hover:scale-105"
+              className={`${GRID_CONFIGS.CARDS.ITEM} cursor-pointer flex flex-col hover:scale-105`}
               onClick={handleCardClick}
             >
-              <CardContent className="p-4 pb-0">
+              <CardContent
+                className={SPACING.COMPONENT.PADDING_MEDIUM + " pb-0"}
+              >
                 <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
                   <img
                     src={plant.image_url || "/imagenotfound.jpeg"}
                     alt={plant.nombre_comun}
-                    className="object-cover w-full h-full"
+                    className={GRID_CONFIGS.CARDS.IMAGE}
                     loading="lazy"
                   />
                   <div className="absolute top-3 left-3">
@@ -204,7 +193,9 @@ export default function HomePage() {
                 </div>
               </CardContent>
 
-              <CardHeader className="flex-1 flex flex-col justify-between p-4 items-center text-left">
+              <CardHeader
+                className={`flex-1 flex flex-col justify-between ${SPACING.COMPONENT.PADDING_MEDIUM} items-center text-left`}
+              >
                 <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm w-full max-w-xs">
                   <div>
                     <p className="text-muted-foreground text-xs uppercase">

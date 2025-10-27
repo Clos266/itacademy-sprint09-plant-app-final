@@ -34,14 +34,12 @@ import {
 } from "@/services/plantCrudService";
 import { showSuccess, showError, showWarning } from "@/services/toastService";
 import { supabase } from "@/services/supabaseClient";
+import { PAGINATION_SIZES } from "@/constants/pagination";
+import { DOMAIN_FILTER_TYPES } from "@/constants/filterTypes";
+import { SPACING } from "@/constants/layouts";
 
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
-type FilterType = "all" | "available" | "unavailable";
-
-// TODO: Extract to shared constants file when growing
-const FILTER_TYPES: FilterType[] = ["all", "available", "unavailable"] as const;
-
-const ITEMS_PER_PAGE = 5;
+type FilterType = (typeof DOMAIN_FILTER_TYPES.PLANTS.STATUS)[number];
 
 export default function MyPlantsPage() {
   const [plants, setPlants] = useState<Plant[]>([]);
@@ -155,7 +153,7 @@ export default function MyPlantsPage() {
 
   const { page, totalPages, paginated, goToPage } = usePagination(
     filteredPlants,
-    ITEMS_PER_PAGE
+    PAGINATION_SIZES.TABLE
   );
 
   const handleEdit = useCallback((plant: Plant) => {
@@ -179,12 +177,12 @@ export default function MyPlantsPage() {
     return <div className="text-center mt-8 text-destructive">{error}</div>;
 
   return (
-    <>
+    <div className={SPACING.PAGE.SECTION_GAP}>
       <PageHeader>
         <PageHeaderHeading>My Plants</PageHeaderHeading>
       </PageHeader>
 
-      <Card className="mt-4">
+      <Card>
         <CardContent>
           <FilterBar
             searchComponent={
@@ -198,7 +196,7 @@ export default function MyPlantsPage() {
             filters={
               <>
                 {/* TODO: Extract FilterButtons component when filter patterns are established */}
-                {FILTER_TYPES.map((type) => (
+                {DOMAIN_FILTER_TYPES.PLANTS.STATUS.map((type) => (
                   <Button
                     key={type}
                     variant={filterType === type ? "default" : "outline"}
@@ -325,6 +323,6 @@ export default function MyPlantsPage() {
         plant={selectedPlant}
         onSave={handleSave}
       />
-    </>
+    </div>
   );
 }

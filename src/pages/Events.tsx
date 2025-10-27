@@ -15,19 +15,18 @@ import { fetchSwapPoints } from "@/services/swapPointsCrudService";
 import { EventDetailsModal } from "@/components/Events/EventDetailsModal";
 import { SwapPointDetailsModal } from "@/components/swappoints/SwapPointDetailsModal";
 import { showError } from "@/services/toastService";
+import { GRID_CONFIGS, SPACING } from "@/constants/layouts";
+import { DOMAIN_FILTER_TYPES } from "@/constants/filterTypes";
 import type { Database } from "@/types/supabase";
 
 type Event = Database["public"]["Tables"]["events"]["Row"];
 type SwapPoint = Database["public"]["Tables"]["swap_points"]["Row"];
 
-const FILTER_TYPES = ["all", "upcoming", "past"] as const;
-const GRID_CONFIG = {
-  classes: "grid gap-6 sm:grid-cols-2 lg:grid-cols-3",
-  emptyMessage: {
-    events: "No events found.",
-    swappoints: "No swap points found.",
-  },
-};
+// Using centralized filter types and grid configurations
+const EMPTY_MESSAGES = {
+  events: "No events found.",
+  swappoints: "No swap points found.",
+} as const;
 
 export default function EventsPage() {
   const [activeTab, setActiveTab] = useState<"events" | "swappoints">("events");
@@ -96,7 +95,7 @@ export default function EventsPage() {
   }, [swappoints, search]);
 
   return (
-    <div className="min-h-screen  space-y-6">
+    <div className={`min-h-screen ${SPACING.PAGE.SECTION_GAP}`}>
       <PageHeader>
         <PageHeaderHeading>Find Events and Swap Points</PageHeaderHeading>
       </PageHeader>
@@ -124,7 +123,7 @@ export default function EventsPage() {
                 <>
                   {activeTab === "events" && (
                     <>
-                      {FILTER_TYPES.map((type) => (
+                      {DOMAIN_FILTER_TYPES.EVENTS.STATUS.map((type) => (
                         <Button
                           key={type}
                           variant={filterType === type ? "default" : "outline"}
@@ -197,21 +196,21 @@ function EventGrid({
   onSelect: (id: number) => void;
 }) {
   return (
-    <div className={GRID_CONFIG.classes}>
+    <div className={GRID_CONFIGS.CARDS.CONTAINER}>
       {data.map((event) => {
         const isUpcoming = new Date(event.date) > new Date();
         return (
           <Card
             key={event.id}
-            className="transition-all cursor-pointer overflow-hidden flex flex-col hover:shadow-md hover:scale-105"
+            className={`${GRID_CONFIGS.CARDS.ITEM} cursor-pointer flex flex-col hover:scale-105`}
             onClick={() => onSelect(event.id)}
           >
-            <CardContent className="p-4 pb-0">
+            <CardContent className={`${SPACING.COMPONENT.PADDING_MEDIUM} pb-0`}>
               <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
                 <img
                   src={event.image_url || "/imagenotfound.jpeg"}
                   alt={event.title}
-                  className="object-cover w-full h-full"
+                  className={GRID_CONFIGS.CARDS.IMAGE}
                   loading="lazy"
                 />
                 <div className="absolute top-3 left-3">
@@ -222,7 +221,9 @@ function EventGrid({
               </div>
             </CardContent>
 
-            <CardHeader className="flex-1 flex flex-col justify-between p-4 items-center text-left">
+            <CardHeader
+              className={`flex-1 flex flex-col justify-between ${SPACING.COMPONENT.PADDING_MEDIUM} items-center text-left`}
+            >
               <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm w-full max-w-xs">
                 <div className="col-span-2">
                   <p className="text-muted-foreground text-xs uppercase">
@@ -258,7 +259,7 @@ function EventGrid({
       })}
       {data.length === 0 && (
         <p className="text-center text-muted-foreground col-span-full py-12">
-          {GRID_CONFIG.emptyMessage.events}
+          {EMPTY_MESSAGES.events}
         </p>
       )}
     </div>
@@ -275,19 +276,19 @@ function SwappointGrid({
   onSelect: (id: number) => void;
 }) {
   return (
-    <div className={GRID_CONFIG.classes}>
+    <div className={GRID_CONFIGS.CARDS.CONTAINER}>
       {data.map((point) => (
         <Card
           key={point.id}
-          className="transition-all cursor-pointer overflow-hidden flex flex-col hover:shadow-md hover:scale-105"
+          className={`${GRID_CONFIGS.CARDS.ITEM} cursor-pointer flex flex-col hover:scale-105`}
           onClick={() => onSelect(point.id)}
         >
-          <CardContent className="p-4 pb-0">
+          <CardContent className={`${SPACING.COMPONENT.PADDING_MEDIUM} pb-0`}>
             <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
               <img
                 src={point.image_url || "/imagenotfound.jpeg"}
                 alt={point.name}
-                className="object-cover w-full h-full"
+                className={GRID_CONFIGS.CARDS.IMAGE}
                 loading="lazy"
               />
               <div className="absolute top-3 left-3">
@@ -296,7 +297,9 @@ function SwappointGrid({
             </div>
           </CardContent>
 
-          <CardHeader className="flex-1 flex flex-col justify-between p-4 items-center text-left">
+          <CardHeader
+            className={`flex-1 flex flex-col justify-between ${SPACING.COMPONENT.PADDING_MEDIUM} items-center text-left`}
+          >
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm w-full max-w-xs">
               <div className="col-span-2">
                 <p className="text-muted-foreground text-xs uppercase">
@@ -326,7 +329,7 @@ function SwappointGrid({
       ))}
       {data.length === 0 && (
         <p className="text-center text-muted-foreground col-span-full py-12">
-          {GRID_CONFIG.emptyMessage.swappoints}
+          {EMPTY_MESSAGES.swappoints}
         </p>
       )}
     </div>
