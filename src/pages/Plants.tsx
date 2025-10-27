@@ -328,24 +328,3 @@ export default function MyPlantsPage() {
     </>
   );
 }
-
-/*
-  TODO: Performance and UX improvements implemented:
-  - ✅ Added useMemo for filteredPlants (prevents unnecessary re-filtering)
-  - ✅ Added useCallback for all handlers (prevents child re-renders)  
-  - ✅ Extracted constants (FILTER_TYPES, ITEMS_PER_PAGE)
-  - ✅ Improved type safety (removed "as any", enhanced error handling)
-  - ✅ Enhanced table with loading="lazy", descriptive alt text, truncate classes
-  - ✅ Replaced window.confirm with AlertDialog for UI consistency
-  - ✅ Added transition animations for better UX
-  
-  TODO: Future enhancements to consider:
-  - Extract PlantActionsCell component when action patterns are established
-  - Extract DeletePlantDialog component when dialog patterns grow  
-  - Implement plant-specific business logic to custom hook (usePlantCrud)
-  - Add plant and status filters when requirements grow
-  - Implement optimistic updates for better UX
-  - Consider bulk operations (delete multiple, export) if needed by users
-  - Add plant search with fuzzy matching or tags
-  - Extract realtime subscription logic when patterns are established
-*/
