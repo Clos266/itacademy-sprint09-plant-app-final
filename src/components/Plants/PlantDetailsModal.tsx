@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+
 import { MapPin } from "lucide-react";
 import type { Database } from "@/types/supabase";
 import { getPlantById } from "@/services/plantCrudService";
@@ -106,12 +106,6 @@ export function PlantDetailsModal({
                   <strong>Family:</strong> {plant.familia}
                 </p>
               )}
-              <p>
-                <strong>Water every:</strong>{" "}
-                {plant.interval_days
-                  ? `${plant.interval_days} days`
-                  : "Not defined"}
-              </p>
             </div>
 
             {/* 👤 Owner */}
@@ -133,14 +127,6 @@ export function PlantDetailsModal({
                 </div>
               </div>
             )}
-
-            {/* 🔘 Actions */}
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-              <Button>Propose swap</Button>
-            </div>
           </div>
         )}
       </DialogContent>
