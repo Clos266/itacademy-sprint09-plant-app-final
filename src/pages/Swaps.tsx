@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { PaginatedTable } from "@/components/common/PaginatedTable";
 import { Toggle } from "@/components/ui/toggle";
 import { ArrowUpDown } from "lucide-react";
@@ -19,7 +20,7 @@ import { LoadingState } from "@/components/common/LoadingState";
 type Swap = Database["public"]["Tables"]["swaps"]["Row"];
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-type SwapStatus = "pending" | "accepted" | "rejected" | "completed";
+type SwapStatus = "new" | "accepted" | "declined" | "completed";
 
 interface FullSwap extends Swap {
   senderPlant?: Plant | null;
@@ -33,12 +34,24 @@ type SortDirection = "asc" | "desc";
 
 const ITEMS_PER_PAGE = 5;
 const SWAP_STATUSES: SwapStatus[] = [
-  "pending",
+  "new",
   "accepted",
-  "rejected",
+  "declined",
   "completed",
 ];
 const SORTABLE_COLUMNS = ["created_at", "receiver_id", "status"] as const;
+
+// Helper function to map database status to UI status
+const mapSwapStatus = (dbStatus: string): SwapStatus => {
+  switch (dbStatus) {
+    case "pending":
+      return "new";
+    case "rejected":
+      return "declined";
+    default:
+      return dbStatus as SwapStatus;
+  }
+};
 
 export default function SwapsPage() {
   // TODO: Extract to useSwapsLogic hook - Core data and actions
@@ -94,6 +107,26 @@ export default function SwapsPage() {
     [reload]
   );
 
+  // Decline swap handler
+  const handleDeclineSwap = useCallback(
+    async (swap: FullSwap) => {
+      try {
+        await updateSwapStatusWithAvailability(
+          swap.id,
+          "rejected",
+          swap.senderPlant?.id,
+          swap.receiverPlant?.id
+        );
+        showSuccess("Swap declined successfully");
+        reload();
+      } catch (err) {
+        console.error("Error declining swap:", err);
+        showError("Failed to decline swap");
+      }
+    },
+    [reload]
+  );
+
   // TODO: Extract to useSwapsLogic hook - Memoized sort handler with validation
   const handleSort = useCallback(
     (column: keyof Swap) => {
@@ -126,7 +159,7 @@ export default function SwapsPage() {
           swap.senderPlant?.nombre_comun?.toLowerCase() || "";
         const receiverPlantName =
           swap.receiverPlant?.nombre_comun?.toLowerCase() || "";
-        const status = swap.status.toLowerCase();
+        const status = mapSwapStatus(swap.status).toLowerCase();
 
         return (
           receiverUsername.includes(query) ||
@@ -140,7 +173,7 @@ export default function SwapsPage() {
     // Apply status filter
     if (activeStatuses.length > 0) {
       filtered = filtered.filter((swap) =>
-        activeStatuses.includes(swap.status as SwapStatus)
+        activeStatuses.includes(mapSwapStatus(swap.status))
       );
     }
 
@@ -311,33 +344,70 @@ export default function SwapsPage() {
           {
             key: "actions",
             header: "Actions",
-            render: (swap: FullSwap) => (
-              // TODO: Extract ActionsCell component when table grows
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedSwap(swap);
-                    setOpenSwapInfo(true);
-                  }}
-                  className="transition-colors duration-200"
-                >
-                  View
-                </Button>
+            render: (swap: FullSwap) => {
+              // TODO: Extract to SwapActionsCell component
+              const uiStatus = mapSwapStatus(swap.status);
+              const isNewSwap = uiStatus === "new";
+              const isNewReceiver = isNewSwap && swap.receiver_id === userId;
 
-                {swap.status === "pending" && swap.receiver_id === userId && (
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={() => handleAcceptSwap(swap)}
-                    className="transition-colors duration-200"
-                  >
-                    Accept
-                  </Button>
-                )}
-              </div>
-            ),
+              return (
+                <div className="flex gap-2 items-center">
+                  {/* For new swaps, show Accept/Decline buttons only */}
+                  {isNewReceiver ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => handleAcceptSwap(swap)}
+                        className="transition-colors duration-200"
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDeclineSwap(swap)}
+                        className="transition-colors duration-200"
+                      >
+                        Decline
+                      </Button>
+                    </>
+                  ) : (
+                    /* For processed swaps, show View button only */
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedSwap(swap);
+                        setOpenSwapInfo(true);
+                      }}
+                      className="transition-colors duration-200"
+                    >
+                      View
+                    </Button>
+                  )}
+                </div>
+              );
+            },
+          },
+          {
+            key: "status",
+            header: "Status",
+            render: (swap: FullSwap) => {
+              const uiStatus = mapSwapStatus(swap.status);
+              const badgeVariant = {
+                new: "secondary",
+                accepted: "default",
+                declined: "destructive",
+                completed: "outline",
+              } as const;
+
+              return (
+                <Badge variant={badgeVariant[uiStatus]} className="capitalize">
+                  {uiStatus}
+                </Badge>
+              );
+            },
           },
         ]}
       />
