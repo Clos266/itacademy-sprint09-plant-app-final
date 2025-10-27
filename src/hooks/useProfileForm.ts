@@ -1,9 +1,6 @@
 import { useState, useCallback } from "react";
 import { showError } from "@/services/toastService";
 
-// TODO: Replace with Zod schema when integrating validation
-// TODO: Add advanced validation rules (email format, postal code patterns, etc.)
-// TODO: Consider adding debounced validation for real-time feedback
 export interface ProfileFormData {
   username: string;
   ciudad: string;
@@ -142,36 +139,3 @@ export function useProfileForm({
     validateForm,
   };
 }
-
-/*
-  TODO: Future enhancements for useProfileForm hook:
-  
-  1. Zod schema integration:
-     - Replace ProfileFormData interface with inferred Zod type
-     - Add comprehensive validation rules (email format, postal code patterns)
-     - Support for real-time validation feedback
-     - Custom validation messages per field
-     
-  2. Advanced features:
-     - Debounced validation for better UX
-     - Field-level error tracking and display
-     - Auto-save functionality with conflict resolution
-     - Form state persistence (localStorage/sessionStorage)
-     - Undo/redo capabilities
-     
-  3. Accessibility improvements:
-     - ARIA attributes for validation messages
-     - Screen reader announcements for form state changes
-     - Keyboard navigation enhancements
-     
-  4. Performance optimizations:
-     - Selective field update subscriptions
-     - Virtualized form rendering for large forms
-     - Background validation with web workers
-     
-  5. Integration enhancements:
-     - Support for multiple form modes (create, edit, view)
-     - Integration with React Hook Form or Formik if needed
-     - Server-side validation integration
-     - Real-time collaborative editing features
-*/
