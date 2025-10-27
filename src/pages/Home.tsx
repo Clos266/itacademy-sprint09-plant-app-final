@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Leaf, MapPin } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Leaf } from "lucide-react";
 import { EnhancedFilterBar } from "@/components/common/FilterBar";
 import { ProposeSwapModal } from "@/components/swaps/ProposeSwapModal";
+import { PlantCard } from "@/components/cards";
 import { LoadingState } from "@/components/common/LoadingState";
 import { showError, showWarning } from "@/services/toastService";
 import { fetchPlants } from "@/services/plantCrudService";
@@ -16,7 +16,7 @@ import { useFiltering } from "@/hooks/useFiltering";
 import { FilteringPresets } from "@/config/filteringPresets";
 import { SEARCH_PLACEHOLDERS } from "@/constants/filters";
 import { PAGINATION_SIZES } from "@/constants/pagination";
-import { GRID_CONFIGS, SPACING } from "@/constants/layouts";
+import { SPACING } from "@/constants/layouts";
 import { DOMAIN_FILTER_TYPES } from "@/constants/filterTypes";
 import type { FilterConfig } from "@/types/filtering";
 
@@ -165,77 +165,8 @@ export default function HomePage() {
             setOpenSwap(true);
           };
 
-          const owner = plant.profile;
-
           return (
-            <Card
-              key={plant.id}
-              className={`${GRID_CONFIGS.CARDS.ITEM} cursor-pointer flex flex-col hover:scale-105`}
-              onClick={handleCardClick}
-            >
-              <CardContent
-                className={SPACING.COMPONENT.PADDING_MEDIUM + " pb-0"}
-              >
-                <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-sm">
-                  <img
-                    src={plant.image_url || "/imagenotfound.jpeg"}
-                    alt={plant.nombre_comun}
-                    className={GRID_CONFIGS.CARDS.IMAGE}
-                    loading="lazy"
-                  />
-                  <div className="absolute top-3 left-3">
-                    <Badge
-                      variant={plant.disponible ? "default" : "destructive"}
-                    >
-                      {plant.disponible ? "Available" : "Unavailable"}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-
-              <CardHeader
-                className={`flex-1 flex flex-col justify-between ${SPACING.COMPONENT.PADDING_MEDIUM} items-center text-left`}
-              >
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm w-full max-w-xs">
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase">
-                      Common Name
-                    </p>
-                    <p className="font-semibold truncate">
-                      {plant.nombre_comun}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-muted-foreground text-xs uppercase">
-                      Scientific
-                    </p>
-                    <p className="italic truncate">
-                      {plant.nombre_cientifico || "-"}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="truncate">
-                      {owner?.ciudad || "Unknown"}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={owner?.avatar_url || "/avatar-placeholder.png"}
-                      alt={owner?.username || "User"}
-                      className="w-6 h-6 rounded-full object-cover"
-                      loading="lazy"
-                    />
-                    <span className="text-muted-foreground truncate">
-                      {owner?.username || "Anonymous"}
-                    </span>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+            <PlantCard key={plant.id} plant={plant} onClick={handleCardClick} />
           );
         }}
       />
