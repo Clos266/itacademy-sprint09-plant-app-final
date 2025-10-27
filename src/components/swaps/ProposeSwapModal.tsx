@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { ModalDialog } from "@/components/modals/ModalDialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -9,7 +9,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Spinner } from "@/components/ui/spinner";
+import { LoadingState } from "@/components/common/LoadingState";
 import { showError, showSuccess } from "@/services/toastService";
 import { addSwapProposal } from "@/services/swapCrudService";
 import { getCurrentUser } from "@/services/authService";
@@ -39,6 +39,18 @@ export function ProposeSwapModal({
   const [loading, setLoading] = useState(false);
   const [loadingPoints, setLoadingPoints] = useState(true);
 
+  // 🧹 Reset form function
+  const resetForm = useCallback(() => {
+    setOfferedPlantId(null);
+    setSwapPointId(null);
+    setMessage("");
+  }, []);
+
+  // ✅ Form validation
+  const isFormValid = useMemo(() => {
+    return !!(targetPlant && offeredPlantId && message.trim().length >= 5);
+  }, [targetPlant, offeredPlantId, message]);
+
   // 🔹 Fetch swap points al abrir el modal
   useEffect(() => {
     if (open) {
@@ -52,9 +64,11 @@ export function ProposeSwapModal({
     }
   }, [open]);
 
-  const handleSubmit = async () => {
-    if (!targetPlant || !offeredPlantId) {
-      showError("Please select one of your plants to offer.");
+  const handleSubmit = useCallback(async () => {
+    if (!isFormValid) {
+      showError(
+        "Please fill in all required fields (plant selection and message with at least 5 characters)."
+      );
       return;
     }
 
@@ -65,23 +79,58 @@ export function ProposeSwapModal({
 
       await addSwapProposal({
         sender_id: user.id,
-        receiver_id: targetPlant.user_id!,
-        sender_plant_id: offeredPlantId,
-        receiver_plant_id: targetPlant.id,
+        receiver_id: targetPlant!.user_id!,
+        sender_plant_id: offeredPlantId!,
+        receiver_plant_id: targetPlant!.id,
         swap_point_id: swapPointId ?? null,
         status: "pending",
         initialMessage: message,
       });
 
       showSuccess("Swap proposal sent!");
+      resetForm();
       onOpenChange(false);
     } catch (err: any) {
       console.error("Error sending proposal:", err);
-      showError(err.message || "Failed to send proposal.");
+
+      // Enhanced error handling with specific messages
+      let errorMessage = "Failed to send proposal";
+      if (err?.message?.includes("auth")) {
+        errorMessage = "Authentication error. Please log in again.";
+      } else if (err?.message?.includes("network")) {
+        errorMessage = "Network error. Please check your connection.";
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    isFormValid,
+    targetPlant,
+    offeredPlantId,
+    message,
+    swapPointId,
+    resetForm,
+  ]);
+
+  // 🚀 Memoized handlers for better performance
+  const handlePlantChange = useCallback((value: string) => {
+    setOfferedPlantId(Number(value));
+  }, []);
+
+  const handleSwapPointChange = useCallback((value: string) => {
+    setSwapPointId(Number(value));
+  }, []);
+
+  const handleMessageChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setMessage(e.target.value);
+    },
+    []
+  );
 
   return (
     <ModalDialog
@@ -103,11 +152,11 @@ export function ProposeSwapModal({
         </p>
       ) : (
         <div className="space-y-4">
-          {/* 🌿 Your plant */}
+          {/*  Your plant */}
           <div>
             <Label>Your plant to offer</Label>
             <Select
-              onValueChange={(val) => setOfferedPlantId(Number(val))}
+              onValueChange={handlePlantChange}
               value={offeredPlantId ? String(offeredPlantId) : ""}
               disabled={loading}
             >
@@ -130,16 +179,14 @@ export function ProposeSwapModal({
             </Select>
           </div>
 
-          {/* 🗺️ Swap point (optional) */}
+          {/*  Swap point (optional) */}
           <div>
             <Label>Swap point (optional)</Label>
             {loadingPoints ? (
-              <div className="flex justify-center py-4">
-                <Spinner className="text-primary" />
-              </div>
+              <LoadingState size="sm" message="Loading swap points..." />
             ) : (
               <Select
-                onValueChange={(val) => setSwapPointId(Number(val))}
+                onValueChange={handleSwapPointChange}
                 value={swapPointId ? String(swapPointId) : ""}
                 disabled={loading}
               >
@@ -163,13 +210,13 @@ export function ProposeSwapModal({
             )}
           </div>
 
-          {/* 💬 Message */}
+          {/*  Message */}
           <div>
-            <Label>Message (optional)</Label>
+            <Label>Message </Label>
             <Textarea
-              placeholder="Add a short note to the owner..."
+              placeholder="Add a short note to the owner (minimum 5 characters)..."
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={handleMessageChange}
               className="mt-1"
               disabled={loading}
             />
