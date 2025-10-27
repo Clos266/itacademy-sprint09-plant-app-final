@@ -21,7 +21,16 @@ interface ModalDialogProps {
   cancelLabel?: string;
   loading?: boolean;
   loadingText?: string;
+  showFooter?: boolean;
+  size?: "sm" | "md" | "lg" | "xl";
 }
+
+const sizeClasses = {
+  sm: "sm:max-w-sm",
+  md: "sm:max-w-md",
+  lg: "sm:max-w-lg",
+  xl: "sm:max-w-2xl",
+};
 
 export function ModalDialog({
   open,
@@ -34,6 +43,8 @@ export function ModalDialog({
   cancelLabel = "Cancel",
   loading = false,
   loadingText = "Saving...",
+  showFooter = true,
+  size = "lg",
 }: ModalDialogProps) {
   return (
     <Dialog
@@ -44,7 +55,7 @@ export function ModalDialog({
       }}
     >
       <DialogContent
-        className="sm:max-w-lg"
+        className={sizeClasses[size]}
         aria-busy={loading}
         aria-describedby={loading ? "modal-loading-region" : undefined}
       >
@@ -56,27 +67,29 @@ export function ModalDialog({
         {/* 🌿 contenido dinámico */}
         <div className="py-4">{children}</div>
 
-        <DialogFooter className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-          >
-            {cancelLabel}
-          </Button>
-
-          {onConfirm && (
+        {showFooter && (
+          <DialogFooter className="flex justify-end gap-2">
             <Button
-              onClick={onConfirm}
+              variant="outline"
+              onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="min-w-[90px] flex items-center justify-center gap-2"
-              id={loading ? "modal-loading-region" : undefined}
             >
-              {loading && <Spinner className="w-4 h-4 mr-2" />}
-              {loading ? loadingText : confirmLabel}
+              {cancelLabel}
             </Button>
-          )}
-        </DialogFooter>
+
+            {onConfirm && (
+              <Button
+                onClick={onConfirm}
+                disabled={loading}
+                className="min-w-[90px] flex items-center justify-center gap-2"
+                id={loading ? "modal-loading-region" : undefined}
+              >
+                {loading && <Spinner className="w-4 h-4 mr-2" />}
+                {loading ? loadingText : confirmLabel}
+              </Button>
+            )}
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

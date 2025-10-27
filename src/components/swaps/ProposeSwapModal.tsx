@@ -46,6 +46,17 @@ export function ProposeSwapModal({
     setMessage("");
   }, []);
 
+  // 🔄 Handle modal open/close with auto-reset
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      onOpenChange(nextOpen);
+      if (!nextOpen) {
+        resetForm();
+      }
+    },
+    [onOpenChange, resetForm]
+  );
+
   // ✅ Form validation
   const isFormValid = useMemo(() => {
     return !!(targetPlant && offeredPlantId && message.trim().length >= 5);
@@ -88,8 +99,7 @@ export function ProposeSwapModal({
       });
 
       showSuccess("Swap proposal sent!");
-      resetForm();
-      onOpenChange(false);
+      onOpenChange(false); // handleOpenChange will reset the form
     } catch (err: any) {
       console.error("Error sending proposal:", err);
 
@@ -135,16 +145,18 @@ export function ProposeSwapModal({
   return (
     <ModalDialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       title="Propose a Swap"
       description={
         targetPlant
           ? `Offer one of your plants in exchange for "${targetPlant.nombre_comun}".`
           : "Select a plant to propose an exchange."
       }
-      onConfirm={handleSubmit}
-      confirmLabel={loading ? "Sending..." : "Send Proposal"}
+      onConfirm={isFormValid ? handleSubmit : undefined}
+      confirmLabel="Send Proposal"
       loading={loading}
+      loadingText="Sending..."
+      size="md"
     >
       {!targetPlant ? (
         <p className="text-muted-foreground text-sm">

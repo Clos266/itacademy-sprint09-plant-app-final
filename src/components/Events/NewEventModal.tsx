@@ -37,6 +37,22 @@ export function NewEventButton() {
     image_url: "",
   });
 
+  // 🧹 Reset form when modal closes
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      // Reset form when closing
+      setForm({
+        title: "",
+        description: "",
+        date: "",
+        location: "",
+        swap_point_id: "",
+        image_url: "",
+      });
+    }
+  };
+
   // 🔹 Cargar Swap Points disponibles
   useEffect(() => {
     const loadSwapPoints = async () => {
@@ -91,17 +107,7 @@ export function NewEventButton() {
       if (error) throw error;
 
       showSuccess("Event created successfully!");
-      setOpen(false);
-
-      // Reiniciar formulario
-      setForm({
-        title: "",
-        description: "",
-        date: "",
-        location: "",
-        swap_point_id: "",
-        image_url: "",
-      });
+      setOpen(false); // handleOpenChange se encarga del reset
     } catch (err) {
       console.error("Error creating event:", err);
       showError("Could not create event.");
@@ -118,11 +124,14 @@ export function NewEventButton() {
 
       <ModalDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         title="Create New Event"
         description="Add a new community event or plant swap."
-        confirmLabel={loading ? "Saving..." : "Save"}
+        confirmLabel="Create Event"
         onConfirm={handleCreate}
+        loading={loading}
+        loadingText="Creating..."
+        size="lg"
       >
         <ScrollArea className="max-h-[75vh] px-1">
           <div className="space-y-4 max-w-md mx-auto">

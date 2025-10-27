@@ -4,13 +4,6 @@ import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +12,7 @@ import { ImageUploader } from "@/components/common/ImageUploader";
 import { supabase } from "@/services/supabaseClient";
 import { showSuccess, showError } from "@/services/toastService";
 import { Plus } from "lucide-react";
+import { ModalDialog } from "@/components/modals/ModalDialog";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
@@ -137,8 +131,35 @@ export function NewSwapPointButton() {
     };
   }, [ready]);
 
+  // 🧹 Reset form
+  const resetForm = () => {
+    setData({
+      name: "",
+      description: "",
+      address: "",
+      city: "",
+      lat: 41.3874,
+      lng: 2.1686,
+      image_url: "",
+    });
+    setReady(false);
+  };
+
+  // 🔄 Handle modal open/close
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      resetForm();
+    }
+  };
+
   // 💾 Guardar en Supabase
   const handleSave = async () => {
+    if (!data.name.trim()) {
+      showError("Please enter a name for the swap point.");
+      return;
+    }
+
     try {
       setSaving(true);
       const user = (await supabase.auth.getUser()).data.user;
@@ -151,17 +172,8 @@ export function NewSwapPointButton() {
 
       if (error) throw error;
 
-      showSuccess("Swap point created successfully 🌿");
-      setOpen(false);
-      setData({
-        name: "",
-        description: "",
-        address: "",
-        city: "",
-        lat: 41.3874,
-        lng: 2.1686,
-        image_url: "",
-      });
+      showSuccess("Swap point created successfully! 🌿");
+      setOpen(false); // handleOpenChange will reset form
     } catch (err) {
       console.error("Error saving swap point:", err);
       showError("Error saving swap point. Please try again.");
@@ -176,95 +188,90 @@ export function NewSwapPointButton() {
         <Plus className="mr-1 justify-center h-4 w-4" />
       </Button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg w-[90%] max-h-[90vh] overflow-hidden rounded-2xl">
-          <ScrollArea className="max-h-[80vh] p-4">
-            <DialogHeader>
-              <DialogTitle>Add New Swap Point</DialogTitle>
-            </DialogHeader>
+      <ModalDialog
+        open={open}
+        onOpenChange={handleOpenChange}
+        title="Add New Swap Point"
+        description="Create a new location for plant exchanges in your community"
+        onConfirm={handleSave}
+        confirmLabel="Create Swap Point"
+        loading={saving}
+        loadingText="Creating..."
+        size="xl"
+      >
+        <ScrollArea className="max-h-[70vh]">
+          <div className="space-y-3 mt-2">
+            <div>
+              <Label>Name</Label>
+              <Input
+                value={data.name}
+                onChange={(e) => setData({ ...data, name: e.target.value })}
+                placeholder="Community Garden"
+              />
+            </div>
 
-            <div className="space-y-3 mt-2">
-              <div>
-                <Label>Name</Label>
-                <Input
-                  value={data.name}
-                  onChange={(e) => setData({ ...data, name: e.target.value })}
-                  placeholder="Community Garden"
-                />
-              </div>
+            <div>
+              <Label>Description</Label>
+              <Input
+                value={data.description}
+                onChange={(e) =>
+                  setData({ ...data, description: e.target.value })
+                }
+                placeholder="A place to exchange plants"
+              />
+            </div>
 
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label>Description</Label>
+                <Label>Address</Label>
                 <Input
-                  value={data.description}
+                  value={data.address}
                   onChange={(e) =>
-                    setData({ ...data, description: e.target.value })
+                    setData({ ...data, address: e.target.value })
                   }
-                  placeholder="A place to exchange plants"
                 />
               </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label>Address</Label>
-                  <Input
-                    value={data.address}
-                    onChange={(e) =>
-                      setData({ ...data, address: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>City</Label>
-                  <Input
-                    value={data.city}
-                    onChange={(e) => setData({ ...data, city: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              {/* 🗺️ Mapa compacto */}
-              <div className="space-y-1">
-                <Label>Location</Label>
-                <div
-                  ref={mapContainerRef}
-                  className="w-full h-48 sm:h-56 mt-1 rounded-lg border border-border overflow-hidden"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Search or drag the marker to adjust location.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <p>Lat: {data.lat.toFixed(4)}</p>
-                <p>Lng: {data.lng.toFixed(4)}</p>
-              </div>
-
-              {/* 📸 Subida de imagen */}
               <div>
-                <ImageUploader
-                  bucket="swap_points"
-                  pathPrefix="user_uploads"
-                  onUpload={(url) =>
-                    setData((prev) => ({ ...prev, image_url: url }))
-                  }
-                  label="Upload Image"
-                  currentUrl={data.image_url}
+                <Label>City</Label>
+                <Input
+                  value={data.city}
+                  onChange={(e) => setData({ ...data, city: e.target.value })}
                 />
               </div>
             </div>
-          </ScrollArea>
 
-          <DialogFooter className="flex justify-end gap-2 border-t pt-3">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            {/* 🗺️ Mapa compacto */}
+            <div className="space-y-1">
+              <Label>Location</Label>
+              <div
+                ref={mapContainerRef}
+                className="w-full h-48 sm:h-56 mt-1 rounded-lg border border-border overflow-hidden"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Search or drag the marker to adjust location.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+              <p>Lat: {data.lat.toFixed(4)}</p>
+              <p>Lng: {data.lng.toFixed(4)}</p>
+            </div>
+
+            {/* 📸 Subida de imagen */}
+            <div>
+              <ImageUploader
+                bucket="swap_points"
+                pathPrefix="user_uploads"
+                onUpload={(url) =>
+                  setData((prev) => ({ ...prev, image_url: url }))
+                }
+                label="Upload Image"
+                currentUrl={data.image_url}
+              />
+            </div>
+          </div>
+        </ScrollArea>
+      </ModalDialog>
     </>
   );
 }

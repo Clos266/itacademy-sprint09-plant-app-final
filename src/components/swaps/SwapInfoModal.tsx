@@ -1,12 +1,4 @@
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogHeader,
@@ -25,7 +17,11 @@ import { useState, useMemo, useCallback } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import type { Database } from "@/types/supabase";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { updateSwapStatusWithAvailability } from "@/services/swapCrudService";
+import {
+  markSwapAsCompletedByUser,
+  rejectSwap,
+} from "@/services/swapCrudService";
+import { ModalDialog } from "@/components/modals/ModalDialog";
 
 type Swap = Database["public"]["Tables"]["swaps"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -80,40 +76,6 @@ export function SwapInfoModal({
     };
   }, [swap?.receiver_id, swap?.status, userId]);
 
-  // Memoized status update handler for performance
-  const handleUpdateStatus = useCallback(
-    async (status: "accepted" | "rejected") => {
-      if (!swap) return;
-
-      try {
-        setLoadingAction(true);
-
-        await updateSwapStatusWithAvailability(
-          swap.id,
-          status,
-          swap.senderPlant?.id,
-          swap.receiverPlant?.id
-        );
-
-        showSuccess(`Swap ${status} successfully`);
-        onStatusChange?.();
-        onOpenChange(false);
-      } catch (err) {
-        console.error(err);
-        showError("Failed to update swap status");
-      } finally {
-        setLoadingAction(false);
-      }
-    },
-    [
-      swap?.id,
-      swap?.senderPlant?.id,
-      swap?.receiverPlant?.id,
-      onStatusChange,
-      onOpenChange,
-    ]
-  );
-
   // Memoized reject handler with AlertDialog confirmation
   const handleRejectSwap = useCallback(() => {
     setShowRejectDialog(true);
@@ -121,24 +83,79 @@ export function SwapInfoModal({
 
   // Memoized confirm reject handler
   const handleConfirmReject = useCallback(async () => {
-    setShowRejectDialog(false);
-    await handleUpdateStatus("rejected");
-  }, [handleUpdateStatus]);
+    if (!swap) return;
+
+    try {
+      setLoadingAction(true);
+      setShowRejectDialog(false);
+
+      await rejectSwap(swap.id);
+      onStatusChange?.();
+      onOpenChange(false);
+    } catch (err) {
+      console.error(err);
+      showError("Failed to reject swap");
+    } finally {
+      setLoadingAction(false);
+    }
+  }, [swap?.id, onStatusChange, onOpenChange]);
+
+  // Memoized complete swap handler
+  const handleMarkAsCompleted = useCallback(async () => {
+    if (!swap) return;
+
+    try {
+      setLoadingAction(true);
+      await markSwapAsCompletedByUser(swap.id, userId);
+      showSuccess("Swap marked as completed");
+      onStatusChange?.();
+      onOpenChange(false);
+    } catch (err) {
+      console.error("Error marking swap as completed:", err);
+      showError("Failed to update completion status");
+    } finally {
+      setLoadingAction(false);
+    }
+  }, [swap?.id, userId, onStatusChange, onOpenChange]);
+
+  // Custom footer with conditional swap actions
+  const customFooter = swap && swapInfo && (
+    <div className="flex justify-end gap-2">
+      {swapInfo.isAccepted && (
+        <Button
+          disabled={loadingAction}
+          onClick={handleMarkAsCompleted}
+          variant="secondary"
+        >
+          {loadingAction ? <Spinner className="w-4 h-4" /> : "Complete Swap"}
+        </Button>
+      )}
+      {swapInfo.canReject && (
+        <Button
+          disabled={loadingAction}
+          variant="destructive"
+          onClick={handleRejectSwap}
+        >
+          {loadingAction ? <Spinner className="w-4 h-4" /> : "Reject Swap"}
+        </Button>
+      )}
+    </div>
+  );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-w-xl w-[90%] sm:w-[600px] max-h-[90vh] overflow-y-auto mx-auto rounded-2xl border p-4"
-        style={{ overflow: "visible" }}
+    <>
+      <ModalDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title="Swap Details"
+        description="View details and manage this swap between plants"
+        showFooter={false}
+        size="xl"
       >
-        <ScrollArea className="max-h-[85vh] p-4">
-          <DialogHeader className="flex flex-col items-center">
-            <DialogTitle>Swap Details</DialogTitle>
-            <DialogDescription className="text-center text-muted-foreground">
-              View details and manage this swap between plants
-            </DialogDescription>
-            {/* TODO: Extract SwapStatusBadge component - reusable status indicator */}
-            {swap && (
+        <ScrollArea className="max-h-[70vh]">
+          {/* Status badge */}
+          {swap && (
+            <div className="flex justify-center mb-4">
               <Badge
                 variant={
                   swap.status === "accepted"
@@ -150,8 +167,8 @@ export function SwapInfoModal({
               >
                 {swap.status.charAt(0).toUpperCase() + swap.status.slice(1)}
               </Badge>
-            )}
-          </DialogHeader>
+            </div>
+          )}
 
           {/* TODO: Extract LoadingState component - reusable spinner + message pattern */}
           {!swap ? (
@@ -232,43 +249,6 @@ export function SwapInfoModal({
 
               <Separator className="my-4" />
 
-              {/* TODO: Extract SwapActions component - complex conditional logic for accept/reject buttons */}
-              <div className="mt-4 space-y-3">
-                {/* TODO: Extract AcceptButton component - conditional accept logic with loading state */}
-                {swapInfo?.isReceiver && swapInfo?.isPending && (
-                  <DialogFooter>
-                    <Button
-                      disabled={loadingAction}
-                      onClick={() => handleUpdateStatus("accepted")}
-                      autoFocus
-                    >
-                      {loadingAction ? (
-                        <Spinner className="w-4 h-4" />
-                      ) : (
-                        "Accept Swap"
-                      )}
-                    </Button>
-                  </DialogFooter>
-                )}
-
-                {/* TODO: Extract RejectButton component - conditional reject logic with confirmation dialog */}
-                {swapInfo?.canReject && (
-                  <DialogFooter>
-                    <Button
-                      disabled={loadingAction}
-                      variant="destructive"
-                      onClick={handleRejectSwap}
-                    >
-                      {loadingAction ? (
-                        <Spinner className="w-4 h-4" />
-                      ) : (
-                        "Reject Swap"
-                      )}
-                    </Button>
-                  </DialogFooter>
-                )}
-              </div>
-
               {/* TODO: Extract ChatSection component when chat features expand */}
               {swapInfo?.isAccepted && (
                 <div className="mt-6">
@@ -283,9 +263,12 @@ export function SwapInfoModal({
             </>
           )}
         </ScrollArea>
-      </DialogContent>
 
-      {/* TODO: Extract RejectConfirmationDialog component - reusable confirmation pattern for destructive actions */}
+        {/* Custom footer */}
+        {customFooter}
+      </ModalDialog>
+
+      {/* Confirmation dialog for reject action */}
       <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -306,6 +289,6 @@ export function SwapInfoModal({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Dialog>
+    </>
   );
 }

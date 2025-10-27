@@ -11,7 +11,7 @@ import { SwapInfoModal } from "@/components/swaps/SwapInfoModal";
 import { SearchInput } from "@/components/common/SearchInput";
 import { useSwaps } from "@/hooks/useSwaps";
 import { usePagination } from "@/hooks/usePagination";
-import { markSwapAsCompletedByUser } from "@/services/swapCrudService";
+import { updateSwapStatusWithAvailability } from "@/services/swapCrudService";
 import { showSuccess, showError } from "@/services/toastService";
 import type { Database } from "@/types/supabase";
 import { LoadingState } from "@/components/common/LoadingState";
@@ -73,6 +73,26 @@ export default function SwapsPage() {
   const handleSearchClear = useCallback(() => {
     setSearchQuery("");
   }, []);
+
+  // Accept swap handler
+  const handleAcceptSwap = useCallback(
+    async (swap: FullSwap) => {
+      try {
+        await updateSwapStatusWithAvailability(
+          swap.id,
+          "accepted",
+          swap.senderPlant?.id,
+          swap.receiverPlant?.id
+        );
+        showSuccess("Swap accepted successfully");
+        reload();
+      } catch (err) {
+        console.error("Error accepting swap:", err);
+        showError("Failed to accept swap");
+      }
+    },
+    [reload]
+  );
 
   // TODO: Extract to useSwapsLogic hook - Memoized sort handler with validation
   const handleSort = useCallback(
@@ -175,25 +195,6 @@ export default function SwapsPage() {
       </button>
     ),
     [handleSort, sortColumn]
-  );
-
-  // TODO: Extract to useSwapsLogic hook - Memoized completion handler
-  const handleMarkAsCompleted = useCallback(
-    async (swapId: number) => {
-      try {
-        if (!userId) {
-          showError("User not logged in");
-          return;
-        }
-        await markSwapAsCompletedByUser(swapId, userId);
-        showSuccess("Marked your side as completed");
-        reload();
-      } catch (err) {
-        console.error("Error marking swap as completed:", err);
-        showError("Failed to update completion status");
-      }
-    },
-    [userId, reload]
   );
 
   if (loading) {
@@ -325,34 +326,16 @@ export default function SwapsPage() {
                   View
                 </Button>
 
-                <Button
-                  size="sm"
-                  variant={
-                    swap.status === "completed"
-                      ? "outline"
-                      : swap.status === "rejected"
-                      ? "destructive"
-                      : "secondary"
-                  }
-                  disabled={swap.status !== "accepted"}
-                  onClick={() => handleMarkAsCompleted(swap.id)}
-                  className="transition-colors duration-200"
-                  title={
-                    swap.status === "completed"
-                      ? "Already completed"
-                      : swap.status === "rejected"
-                      ? "This swap was rejected"
-                      : swap.status !== "accepted"
-                      ? "Only accepted swaps can be marked as completed"
-                      : "Mark as completed"
-                  }
-                >
-                  {swap.status === "completed"
-                    ? "Completed"
-                    : swap.status === "rejected"
-                    ? "Rejected"
-                    : "Complete"}
-                </Button>
+                {swap.status === "pending" && swap.receiver_id === userId && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => handleAcceptSwap(swap)}
+                    className="transition-colors duration-200"
+                  >
+                    Accept
+                  </Button>
+                )}
               </div>
             ),
           },

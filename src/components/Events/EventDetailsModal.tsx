@@ -2,15 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, MapPin } from "lucide-react";
@@ -18,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/services/supabaseClient";
 import type { Database } from "@/types/supabase";
 import { LoadingState } from "@/components/common/LoadingState";
+import { ModalDialog } from "@/components/modals/ModalDialog";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
@@ -152,120 +144,121 @@ export function EventDetailsModal({
 
   const isUpcoming = event?.date ? new Date(event.date) > new Date() : false;
 
+  // Custom footer con botones específicos del evento
+  const customFooter = event && !loading && (
+    <div className="flex justify-end gap-2">
+      <Button variant="outline" onClick={() => onOpenChange(false)}>
+        Close
+      </Button>
+      {event.swap_points &&
+        typeof event.swap_points.lat === "number" &&
+        typeof event.swap_points.lng === "number" && (
+          <Button
+            onClick={() =>
+              window.open(
+                `https://www.google.com/maps?q=${event.swap_points!.lat},${
+                  event.swap_points!.lng
+                }`,
+                "_blank"
+              )
+            }
+          >
+            Open in Maps
+          </Button>
+        )}
+    </div>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl w-[90%] sm:w-[600px] max-h-[90vh] overflow-hidden mx-auto rounded-2xl border p-0">
-        {/* ♿️ Título/desc accesibles para lectores de pantalla */}
-        <VisuallyHidden>
-          <DialogTitle>Event Details</DialogTitle>
-          <DialogDescription>
-            Detailed information about this event and its location.
-          </DialogDescription>
-        </VisuallyHidden>
-
-        <ScrollArea className="max-h-[85vh] p-4">
-          {loading ? (
-            <LoadingState className="p-6" />
-          ) : !event ? (
-            <div className="p-6 text-center text-destructive">
-              Could not load this event.
+    <ModalDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={event?.title || "Event Details"}
+      description={
+        loading
+          ? "Loading event details..."
+          : event?.description ||
+            "Detailed information about this event and its location."
+      }
+      size="xl"
+      showFooter={false} // Usamos footer personalizado
+    >
+      <ScrollArea className="max-h-[70vh]">
+        {loading ? (
+          <LoadingState className="p-6" />
+        ) : !event ? (
+          <div className="p-6 text-center text-destructive">
+            Could not load this event.
+          </div>
+        ) : (
+          <>
+            {/* Header info */}
+            <div className="flex flex-col items-center mb-4">
+              <div className="mt-2 flex items-center gap-2">
+                <Badge variant={isUpcoming ? "default" : "secondary"}>
+                  {isUpcoming ? "Upcoming" : "Past"}
+                </Badge>
+                <span className="flex items-center text-sm text-muted-foreground">
+                  <CalendarDays className="w-4 h-4 mr-1" />
+                  {event.date ? new Date(event.date).toLocaleDateString() : "—"}
+                </span>
+              </div>
             </div>
-          ) : (
-            <>
-              {/* Header */}
-              <DialogHeader className="flex flex-col items-center mb-4">
-                <DialogTitle className="text-center">{event.title}</DialogTitle>
-                <DialogDescription className="text-center">
-                  {event.description || "No description available."}
-                </DialogDescription>
-                <div className="mt-2 flex items-center gap-2">
-                  <Badge variant={isUpcoming ? "default" : "secondary"}>
-                    {isUpcoming ? "Upcoming" : "Past"}
-                  </Badge>
-                  <span className="flex items-center text-sm text-muted-foreground">
-                    <CalendarDays className="w-4 h-4 mr-1" />
-                    {event.date
-                      ? new Date(event.date).toLocaleDateString()
-                      : "—"}
-                  </span>
-                </div>
-              </DialogHeader>
 
-              {/* Imagen del evento */}
-              <div className="relative mx-auto aspect-square w-full max-w-[220px] rounded-xl overflow-hidden border border-border bg-muted">
-                <img
-                  src={event.image_url || "/imagenotfound.jpeg"}
-                  alt={event.title}
-                  className="object-cover w-full h-full"
-                />
-              </div>
+            {/* Imagen del evento */}
+            <div className="relative mx-auto aspect-square w-full max-w-[220px] rounded-xl overflow-hidden border border-border bg-muted">
+              <img
+                src={event.image_url || "/imagenotfound.jpeg"}
+                alt={event.title}
+                className="object-cover w-full h-full"
+              />
+            </div>
 
-              {/* Organizer + ubicación textual */}
-              <div className="mt-4 text-sm text-muted-foreground space-y-2">
-                {event.profiles && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
-                    <img
-                      src={
-                        event.profiles.avatar_url || "/avatar-placeholder.png"
-                      }
-                      alt={event.profiles.username || "User"}
-                      className="w-9 h-9 rounded-full object-cover border border-border"
-                    />
-                    <div className="flex flex-col leading-tight">
-                      <span className="font-medium text-foreground">
-                        @{event.profiles.username || "user"}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <p className="flex items-center">
-                  <MapPin className="w-4 h-4 mr-1 text-primary" />
-                  {event.location}
-                </p>
-
-                {event.swap_points && (
-                  <p className="text-xs">
-                    <strong>Swap point:</strong> {event.swap_points.name} —{" "}
-                    {event.swap_points.address}, {event.swap_points.city}
-                  </p>
-                )}
-              </div>
-
-              {/* Mapa (si hay swap point con coords) */}
-              {event.swap_points &&
-                typeof event.swap_points.lat === "number" &&
-                typeof event.swap_points.lng === "number" && (
-                  <div
-                    ref={mapContainerRef}
-                    className="w-full h-56 sm:h-64 mt-4 rounded-lg border border-border overflow-hidden"
+            {/* Organizer + ubicación textual */}
+            <div className="mt-4 text-sm text-muted-foreground space-y-2">
+              {event.profiles && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+                  <img
+                    src={event.profiles.avatar_url || "/avatar-placeholder.png"}
+                    alt={event.profiles.username || "User"}
+                    className="w-9 h-9 rounded-full object-cover border border-border"
                   />
-                )}
+                  <div className="flex flex-col leading-tight">
+                    <span className="font-medium text-foreground">
+                      @{event.profiles.username || "user"}
+                    </span>
+                  </div>
+                </div>
+              )}
 
-              {/* Actions */}
-              <DialogFooter className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Close
-                </Button>
-                {event.swap_points && (
-                  <Button
-                    onClick={() =>
-                      window.open(
-                        `https://www.google.com/maps?q=${
-                          event.swap_points!.lat
-                        },${event.swap_points!.lng}`,
-                        "_blank"
-                      )
-                    }
-                  >
-                    Open in Maps
-                  </Button>
-                )}
-              </DialogFooter>
-            </>
-          )}
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+              <p className="flex items-center">
+                <MapPin className="w-4 h-4 mr-1 text-primary" />
+                {event.location}
+              </p>
+
+              {event.swap_points && (
+                <p className="text-xs">
+                  <strong>Swap point:</strong> {event.swap_points.name} —{" "}
+                  {event.swap_points.address}, {event.swap_points.city}
+                </p>
+              )}
+            </div>
+
+            {/* Mapa (si hay swap point con coords) */}
+            {event.swap_points &&
+              typeof event.swap_points.lat === "number" &&
+              typeof event.swap_points.lng === "number" && (
+                <div
+                  ref={mapContainerRef}
+                  className="w-full h-56 sm:h-64 mt-4 rounded-lg border border-border overflow-hidden"
+                />
+              )}
+          </>
+        )}
+      </ScrollArea>
+
+      {/* Custom footer */}
+      {customFooter}
+    </ModalDialog>
   );
 }

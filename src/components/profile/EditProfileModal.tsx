@@ -1,13 +1,5 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { supabase } from "@/services/supabaseClient";
 import { fetchUserById, updateUser } from "@/services/userService";
@@ -16,7 +8,7 @@ import { showSuccess, showError } from "@/services/toastService";
 import { useProfileForm, type ProfileFormData } from "@/hooks/useProfileForm";
 import type { Database } from "@/types/supabase";
 import { LoadingState } from "@/components/common/LoadingState";
-import { Spinner } from "@/components/ui/spinner";
+import { ModalDialog } from "@/components/modals/ModalDialog";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -110,10 +102,6 @@ export function EditProfileModal({
     loadProfile();
   }, [open]);
 
-  const handleCancel = () => {
-    onOpenChange(false);
-  };
-
   const handleImageUploadWithFeedback = (url: string) => {
     handleImageUpload(url);
     showSuccess("Profile photo updated!");
@@ -122,93 +110,76 @@ export function EditProfileModal({
   if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-6 rounded-2xl">
-        <DialogHeader>
-          <DialogTitle>{loading ? "Loading..." : "Edit profile"}</DialogTitle>
-          <DialogDescription>
-            {loading
-              ? "Please wait while we load your data."
-              : "Update your public information below."}
-          </DialogDescription>
-        </DialogHeader>
+    <ModalDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={loading ? "Loading..." : "Edit Profile"}
+      description={
+        loading
+          ? "Please wait while we load your data."
+          : "Update your public information below."
+      }
+      onConfirm={isValid ? handleSave : undefined}
+      confirmLabel="Save Changes"
+      loading={saving}
+      loadingText="Saving..."
+      size="md"
+    >
+      {loading ? (
+        <LoadingState className="py-6" />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-col items-center gap-3 mb-6">
+            <ImageUploader
+              bucket="avatars"
+              pathPrefix={profile?.id || ""}
+              currentUrl={form.avatar_url}
+              label="Change photo"
+              onUpload={handleImageUploadWithFeedback}
+            />
+          </div>
 
-        {loading ? (
-          <LoadingState className="py-6" />
-        ) : (
-          <>
-            <div className="flex flex-col items-center gap-3 mt-4 mb-6">
-              <ImageUploader
-                bucket="avatars"
-                pathPrefix={profile?.id || ""}
-                currentUrl={form.avatar_url}
-                label="Change photo"
-                onUpload={handleImageUploadWithFeedback}
+          <div>
+            <Label htmlFor="username">Username *</Label>
+            <Input
+              id="username"
+              type="text"
+              value={form.username}
+              onChange={handleUsernameChange}
+              placeholder="Enter your username"
+              disabled={saving}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label htmlFor="ciudad">City</Label>
+              <Input
+                id="ciudad"
+                type="text"
+                value={form.ciudad}
+                onChange={handleCiudadChange}
+                placeholder="Enter your city (optional)"
+                disabled={saving}
               />
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  value={form.username}
-                  onChange={handleUsernameChange}
-                  placeholder="Enter your username"
-                  disabled={saving}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label htmlFor="ciudad">City</Label>
-                  <Input
-                    id="ciudad"
-                    type="text"
-                    value={form.ciudad}
-                    onChange={handleCiudadChange}
-                    placeholder="Enter your city (optional)"
-                    disabled={saving}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cp">Postal Code</Label>
-                  <Input
-                    id="cp"
-                    type="text"
-                    value={form.cp}
-                    onChange={handleCpChange}
-                    placeholder="Enter postal code (optional)"
-                    disabled={saving}
-                    maxLength={5}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 mt-6">
-              <Button
-                variant="outline"
-                onClick={handleCancel}
+            <div>
+              <Label htmlFor="cp">Postal Code</Label>
+              <Input
+                id="cp"
+                type="text"
+                value={form.cp}
+                onChange={handleCpChange}
+                placeholder="Enter postal code (optional)"
                 disabled={saving}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={saving || !isValid}
-                className="flex items-center justify-center gap-2"
-              >
-                {saving && <Spinner className="w-4 h-4" />}
-                {saving ? "Saving..." : "Save"}
-              </Button>
+                maxLength={5}
+              />
             </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+          </div>
+        </div>
+      )}
+    </ModalDialog>
   );
 }
 

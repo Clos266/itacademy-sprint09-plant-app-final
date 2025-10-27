@@ -2,15 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin } from "lucide-react";
@@ -18,6 +9,7 @@ import type { Database } from "@/types/supabase";
 import { supabase } from "@/services/supabaseClient";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LoadingState } from "@/components/common/LoadingState";
+import { ModalDialog } from "@/components/modals/ModalDialog";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
@@ -109,87 +101,87 @@ export function SwapPointDetailsModal({
 
   if (!open || !swapPointId) return null;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-w-xl w-[90%] sm:w-[600px] max-h-[90vh] overflow-hidden mx-auto rounded-2xl border p-0"
-        style={{ overflow: "visible" }}
+  // Custom footer with swap point specific actions
+  const customFooter = point && !loading && (
+    <div className="flex justify-end gap-2">
+      <Button variant="outline" onClick={() => onOpenChange(false)}>
+        Close
+      </Button>
+      <Button
+        onClick={() =>
+          window.open(
+            `https://www.google.com/maps?q=${point.lat},${point.lng}`,
+            "_blank"
+          )
+        }
       >
-        <VisuallyHidden>
-          <DialogTitle>Swap Point Details</DialogTitle>
-          <DialogDescription>
-            Detailed information about the selected swap point, including
-            location and image.
-          </DialogDescription>
-        </VisuallyHidden>
+        Open in Maps
+      </Button>
+    </div>
+  );
 
-        <ScrollArea className="max-h-[85vh] p-4">
-          {loading ? (
-            <LoadingState className="p-6" />
-          ) : !point ? (
-            <div className="p-6 text-center text-destructive">
-              Could not load this swap point.
+  return (
+    <ModalDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={point?.name || "Swap Point Details"}
+      description={
+        loading
+          ? "Loading swap point details..."
+          : point?.description ||
+            "Detailed information about the selected swap point, including location and image."
+      }
+      showFooter={false}
+      size="xl"
+    >
+      <ScrollArea className="max-h-[70vh]">
+        {loading ? (
+          <LoadingState className="p-6" />
+        ) : !point ? (
+          <div className="p-6 text-center text-destructive">
+            Could not load this swap point.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* 📍 Header info */}
+            <div className="flex flex-col items-center mb-4">
+              <Badge className="mt-2" variant="default">
+                Swap Point
+              </Badge>
             </div>
-          ) : (
-            <>
-              {/* 📍 Header */}
-              <DialogHeader className="flex flex-col items-center mb-4">
-                <DialogTitle>{point.name}</DialogTitle>
-                <DialogDescription className="text-center">
-                  {point.description || "No description available."}
-                </DialogDescription>
-                <Badge className="mt-2" variant="default">
-                  Swap Point
-                </Badge>
-              </DialogHeader>
 
-              {/* 🖼️ Imagen */}
-              <div className="relative mx-auto aspect-square w-full max-w-[220px] rounded-xl overflow-hidden border border-border bg-muted">
-                <img
-                  src={point.image_url || "/imagenotfound.jpeg"}
-                  alt={point.name}
-                  className="object-cover w-full h-full"
-                />
-              </div>
-
-              {/* 📄 Info */}
-              <div className="mt-4 text-sm text-muted-foreground space-y-1">
-                <p className="flex items-center">
-                  <MapPin className="w-4 h-4 mr-1 text-primary" />
-                  {point.address}, {point.city}
-                </p>
-                <p>
-                  <strong>Coordinates:</strong> {point.lat.toFixed(4)},{" "}
-                  {point.lng.toFixed(4)}
-                </p>
-              </div>
-
-              {/* 🗺️ Mapa */}
-              <div
-                ref={mapContainerRef}
-                className="w-full h-56 sm:h-64 mt-4 rounded-lg border border-border overflow-hidden"
+            {/* 🖼️ Imagen */}
+            <div className="relative mx-auto aspect-square w-full max-w-[220px] rounded-xl overflow-hidden border border-border bg-muted">
+              <img
+                src={point.image_url || "/imagenotfound.jpeg"}
+                alt={point.name}
+                className="object-cover w-full h-full"
               />
+            </div>
 
-              {/* 🔘 Actions */}
-              <DialogFooter className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Close
-                </Button>
-                <Button
-                  onClick={() =>
-                    window.open(
-                      `https://www.google.com/maps?q=${point.lat},${point.lng}`,
-                      "_blank"
-                    )
-                  }
-                >
-                  Open in Maps
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+            {/* 📄 Info */}
+            <div className="mt-4 text-sm text-muted-foreground space-y-1">
+              <p className="flex items-center">
+                <MapPin className="w-4 h-4 mr-1 text-primary" />
+                {point.address}, {point.city}
+              </p>
+              <p>
+                <strong>Coordinates:</strong> {point.lat.toFixed(4)},{" "}
+                {point.lng.toFixed(4)}
+              </p>
+            </div>
+
+            {/* 🗺️ Mapa */}
+            <div
+              ref={mapContainerRef}
+              className="w-full h-56 sm:h-64 mt-4 rounded-lg border border-border overflow-hidden"
+            />
+          </div>
+        )}
+      </ScrollArea>
+
+      {/* Custom footer */}
+      {customFooter}
+    </ModalDialog>
   );
 }

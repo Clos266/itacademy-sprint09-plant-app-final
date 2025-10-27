@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ModalDialog } from "@/components/modals/ModalDialog";
 import { Plus } from "lucide-react";
 import { plantSuggestions } from "@/data/plantSuggestions";
 import { ImageUploader } from "@/components/common/ImageUploader";
 import { supabase } from "@/services/supabaseClient";
+import { showSuccess, showError } from "@/services/toastService";
 
 export function NewPlantButton() {
   const [open, setOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filtered, setFiltered] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [plantData, setPlantData] = useState({
     nombre_comun: "",
@@ -64,11 +67,44 @@ export function NewPlantButton() {
     setUploading(false);
   };
 
+  // 🧹 Reset form
+  const resetForm = () => {
+    setPlantData({
+      nombre_comun: "",
+      nombre_cientifico: "",
+      familia: "",
+      especie: "",
+      disponible: true,
+      interval_days: 7,
+      last_watered: new Date().toISOString(),
+      image_url: "",
+    });
+    setShowSuggestions(false);
+    setFiltered([]);
+  };
+
+  // 🔄 Handle modal open/close
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      resetForm();
+    }
+  };
+
   // 💾 Guardar en Supabase
   const handleSave = async () => {
+    if (!plantData.nombre_comun.trim()) {
+      showError("Please enter a plant name.");
+      return;
+    }
+
     try {
+      setSaving(true);
       const user = (await supabase.auth.getUser()).data.user;
-      if (!user) return alert("Debes iniciar sesión");
+      if (!user) {
+        showError("You must be logged in to add plants.");
+        return;
+      }
 
       const { error } = await supabase.from("plants").insert([
         {
@@ -78,10 +114,14 @@ export function NewPlantButton() {
       ]);
 
       if (error) throw error;
-      console.log("Planta guardada:", plantData);
-      setOpen(false);
+
+      showSuccess("Plant added successfully!");
+      setOpen(false); // handleOpenChange will reset the form
     } catch (err) {
-      console.error("Error al guardar planta:", err);
+      console.error("Error saving plant:", err);
+      showError("Could not save plant. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -93,16 +133,19 @@ export function NewPlantButton() {
 
       <ModalDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={handleOpenChange}
         title="Add New Plant"
+        description="Create a new plant in your collection"
         onConfirm={handleSave}
-        loading={uploading}
-        loadingText="Uploading..."
+        confirmLabel="Add Plant"
+        loading={saving || uploading}
+        loadingText={uploading ? "Uploading..." : "Saving..."}
+        size="lg"
       >
-        {/* 📏 Ajuste de ancho para que sea más estrecho en escritorio */}
-        <div className="mx-auto max-w-md sm:max-w-lg lg:max-w-xl max-h-[64vh] overflow-y-auto p-0">
+        <div className="space-y-4">
           {/* 📸 Plant Image */}
           <div>
+            <Label>Plant Image</Label>
             <ImageUploader
               bucket="plants"
               pathPrefix="user_uploads"
@@ -111,11 +154,10 @@ export function NewPlantButton() {
               currentUrl={plantData.image_url}
             />
           </div>
-          {/* 🌿 Common Name */}
+
+          {/* 🌿 Common Name with autocomplete */}
           <div className="relative">
-            <label className="block text-sm font-medium mb-1">
-              Common Name
-            </label>
+            <Label>Common Name *</Label>
             <Input
               placeholder="e.g. Monstera"
               value={plantData.nombre_comun}
@@ -142,9 +184,7 @@ export function NewPlantButton() {
 
           {/* 🔬 Scientific Name */}
           <div>
-            <label className="block text-sm font-medium mb-1">
-              Scientific Name
-            </label>
+            <Label>Scientific Name</Label>
             <Input
               placeholder="Auto-filled if known"
               value={plantData.nombre_cientifico}
@@ -160,7 +200,7 @@ export function NewPlantButton() {
           {/* 🧬 Species / Family */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Species</label>
+              <Label>Species</Label>
               <Input
                 value={plantData.especie}
                 onChange={(e) =>
@@ -169,7 +209,7 @@ export function NewPlantButton() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Family</label>
+              <Label>Family</Label>
               <Input
                 value={plantData.familia}
                 onChange={(e) =>

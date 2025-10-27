@@ -33,7 +33,7 @@ export function EditPlantModal({
   const handleSubmit = () => {
     if (!plant || uploading) return;
     onSave(plant.id, formData);
-    onOpenChange(false);
+    // No cerramos aquí, dejamos que el componente padre lo maneje después del éxito
   };
 
   return (
@@ -41,14 +41,21 @@ export function EditPlantModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Edit Plant"
+      description={
+        plant
+          ? `Editing ${plant.nombre_comun || "plant"}`
+          : "Select a plant to edit"
+      }
       onConfirm={handleSubmit}
+      confirmLabel="Save Changes"
       loading={uploading}
-      loadingText="Uploading..."
+      loadingText="Saving..."
+      size="md"
     >
       {/* 🖼️ Cambiar imagen */}
 
       {plant ? (
-        <div className="max-w-sm sm:max-w-md lg:max-w-md mx-auto max-h-[75vh] overflow-y-auto space-y-4">
+        <div className="space-y-4">
           {/* 🧱 Grid compacto 2×2 */}
           <div className="pt-2">
             <ImageUploader
@@ -75,9 +82,7 @@ export function EditPlantModal({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="p-2" htmlFor="nombre_comun">
-                Common Name
-              </Label>
+              <Label htmlFor="nombre_comun">Common Name</Label>
               <Input
                 id="nombre_comun"
                 placeholder="e.g. Monstera"
@@ -87,9 +92,7 @@ export function EditPlantModal({
             </div>
 
             <div>
-              <Label className="p-2" htmlFor="nombre_cientifico">
-                Scientific Name
-              </Label>
+              <Label htmlFor="nombre_cientifico">Scientific Name</Label>
               <Input
                 id="nombre_cientifico"
                 placeholder="Auto-filled if known"
@@ -101,9 +104,7 @@ export function EditPlantModal({
             </div>
 
             <div>
-              <Label className="p-2" htmlFor="especie">
-                Species
-              </Label>
+              <Label htmlFor="especie">Species</Label>
               <Input
                 id="especie"
                 placeholder="Monstera"
@@ -113,9 +114,7 @@ export function EditPlantModal({
             </div>
 
             <div>
-              <Label className="p-2" htmlFor="familia">
-                Family
-              </Label>
+              <Label htmlFor="familia">Family</Label>
               <Input
                 id="familia"
                 placeholder="Araceae"
