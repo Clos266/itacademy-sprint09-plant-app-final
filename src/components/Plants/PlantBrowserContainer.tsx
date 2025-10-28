@@ -54,7 +54,6 @@ export function PlantBrowserContainer({
     filteredItems: filteredPlants,
     filters,
     updateFilter,
-    resetFilters,
   } = useFiltering(plants, {
     ...FilteringPresets.plants,
     searchFields: [
@@ -132,11 +131,6 @@ export function PlantBrowserContainer({
     goToPage(1);
   };
 
-  const handleResetFilters = () => {
-    resetFilters();
-    goToPage(1);
-  };
-
   const handleSwapModalClose = () => {
     setOpenSwap(false);
     setTargetPlant(null);
@@ -168,8 +162,6 @@ export function PlantBrowserContainer({
             }
             onChange={handleFilterChange}
             searchPlaceholder={SEARCH_PLACEHOLDERS.plants}
-            showReset
-            onReset={handleResetFilters}
           />
         </CardContent>
       </Card>
@@ -196,95 +188,5 @@ export function PlantBrowserContainer({
         userPlants={availableUserPlants}
       />
     </div>
-  );
-}
-
-export function PlantBrowserStats({
-  userId,
-  className = "",
-}: {
-  userId: string;
-  className?: string;
-}) {
-  const [stats, setStats] = useState<{
-    totalAvailablePlants: number;
-    totalOwners: number;
-    userAvailablePlants: number;
-    userTotalPlants: number;
-    popularSpecies: { species: string; count: number }[];
-  } | null>(null);
-
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadStats = async () => {
-      try {
-        setLoading(true);
-        const statistics = await PlantBrowserService.getBrowsingStatistics(
-          userId
-        );
-        setStats(statistics);
-      } catch (error) {
-        console.error("Error loading browsing statistics:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (userId) {
-      loadStats();
-    }
-  }, [userId]);
-
-  if (loading || !stats) {
-    return <LoadingState className={`h-32 ${className}`} />;
-  }
-
-  return (
-    <Card className={className}>
-      <CardContent className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Browsing Statistics</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div>
-            <div className="font-medium text-primary">
-              {stats.totalAvailablePlants}
-            </div>
-            <div className="text-muted-foreground">Available Plants</div>
-          </div>
-          <div>
-            <div className="font-medium text-primary">{stats.totalOwners}</div>
-            <div className="text-muted-foreground">Plant Owners</div>
-          </div>
-          <div>
-            <div className="font-medium text-primary">
-              {stats.userAvailablePlants}
-            </div>
-            <div className="text-muted-foreground">Your Available</div>
-          </div>
-          <div>
-            <div className="font-medium text-primary">
-              {stats.userTotalPlants}
-            </div>
-            <div className="text-muted-foreground">Your Total</div>
-          </div>
-        </div>
-
-        {stats.popularSpecies.length > 0 && (
-          <div className="mt-4">
-            <h4 className="font-medium mb-2">Popular Species</h4>
-            <div className="text-sm space-y-1">
-              {stats.popularSpecies.slice(0, 3).map((species) => (
-                <div key={species.species} className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    {species.species}
-                  </span>
-                  <span className="font-medium">{species.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
   );
 }

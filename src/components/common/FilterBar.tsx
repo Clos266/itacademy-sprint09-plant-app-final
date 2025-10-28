@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/common/SearchInput";
 import { FilterButtons } from "@/components/common/FilterButtons";
 import { cn } from "@/lib/utils";
@@ -31,8 +30,6 @@ export function EnhancedFilterBar({
   onChange,
   actions,
   searchPlaceholder,
-  showReset = false,
-  onReset,
   className,
   disabled = false,
 }: EnhancedFilterBarProps) {
@@ -96,12 +93,6 @@ export function EnhancedFilterBar({
   const searchFilters = config.filter((f) => f.type === "text");
   const otherFilters = config.filter((f) => f.type !== "text");
 
-  const hasActiveFilters = Object.entries(values).some(([key, value]) => {
-    if (key === "search") return Boolean(value);
-    if (Array.isArray(value)) return value.length > 0;
-    return value !== "" && value !== "all";
-  });
-
   return (
     <div
       className={cn(
@@ -115,19 +106,6 @@ export function EnhancedFilterBar({
 
       <div className="flex gap-2 md:w-auto flex-wrap justify-end items-center">
         {otherFilters.map(renderFilter)}
-
-        {showReset && hasActiveFilters && onReset && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onReset}
-            disabled={disabled}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            Clear Filters
-          </Button>
-        )}
-
         {actions}
       </div>
     </div>

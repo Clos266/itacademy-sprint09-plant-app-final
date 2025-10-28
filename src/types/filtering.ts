@@ -124,10 +124,6 @@ export interface EnhancedFilterBarProps {
 
   searchPlaceholder?: string;
 
-  showReset?: boolean;
-
-  onReset?: () => void;
-
   className?: string;
 
   disabled?: boolean;
