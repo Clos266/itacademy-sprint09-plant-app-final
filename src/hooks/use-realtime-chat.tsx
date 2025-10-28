@@ -31,7 +31,6 @@ export function useRealtimeChat({
   const [isConnected, setIsConnected] = useState(false);
   const [channel, setChannel] = useState<any>(null);
 
-  // 🔹 1️⃣ Cargar historial persistido
   useEffect(() => {
     const fetchHistory = async () => {
       if (!swapId) return;
@@ -73,7 +72,6 @@ export function useRealtimeChat({
     fetchHistory();
   }, [swapId]);
 
-  // 🔹 2️⃣ Configurar canal realtime
   useEffect(() => {
     const newChannel = supabase.channel(roomName);
 
@@ -93,7 +91,6 @@ export function useRealtimeChat({
     };
   }, [roomName]);
 
-  // 🔹 3️⃣ Enviar mensaje (broadcast + persistencia)
   const sendMessage = useCallback(
     async (content: string) => {
       if (!channel || !isConnected) return;
@@ -107,10 +104,8 @@ export function useRealtimeChat({
         createdAt: new Date().toISOString(),
       };
 
-      // ✅ Añadirlo al estado local inmediatamente
       setMessages((current) => [...current, message]);
 
-      // ✅ Guardarlo en la base de datos
       const { error } = await supabase.from("swap_messages").insert({
         swap_id: swapId,
         sender_id: userId,
@@ -119,10 +114,8 @@ export function useRealtimeChat({
 
       if (error) {
         console.error("❌ Error saving message:", error);
-        // opcional: revertir estado si quieres
       }
 
-      // ✅ También enviar broadcast realtime (por si lo usas)
       await channel.send({
         type: "broadcast",
         event: "message",

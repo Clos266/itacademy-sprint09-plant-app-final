@@ -39,14 +39,12 @@ export function ProposeSwapModal({
   const [loading, setLoading] = useState(false);
   const [loadingPoints, setLoadingPoints] = useState(true);
 
-  // 🧹 Reset form function
   const resetForm = useCallback(() => {
     setOfferedPlantId(null);
     setSwapPointId(null);
     setMessage("");
   }, []);
 
-  // 🔄 Handle modal open/close with auto-reset
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
       onOpenChange(nextOpen);
@@ -57,12 +55,10 @@ export function ProposeSwapModal({
     [onOpenChange, resetForm]
   );
 
-  // ✅ Form validation
   const isFormValid = useMemo(() => {
     return !!(targetPlant && offeredPlantId && message.trim().length >= 5);
   }, [targetPlant, offeredPlantId, message]);
 
-  // 🔹 Fetch swap points al abrir el modal
   useEffect(() => {
     if (open) {
       const loadPoints = async () => {
@@ -99,11 +95,10 @@ export function ProposeSwapModal({
       });
 
       showSuccess("Swap proposal sent!");
-      onOpenChange(false); // handleOpenChange will reset the form
+      onOpenChange(false);
     } catch (err: any) {
       console.error("Error sending proposal:", err);
 
-      // Enhanced error handling with specific messages
       let errorMessage = "Failed to send proposal";
       if (err?.message?.includes("auth")) {
         errorMessage = "Authentication error. Please log in again.";
@@ -126,7 +121,6 @@ export function ProposeSwapModal({
     resetForm,
   ]);
 
-  // 🚀 Memoized handlers for better performance
   const handlePlantChange = useCallback((value: string) => {
     setOfferedPlantId(Number(value));
   }, []);
@@ -191,7 +185,6 @@ export function ProposeSwapModal({
             </Select>
           </div>
 
-          {/*  Swap point (optional) */}
           <div>
             <Label>Swap point (optional)</Label>
             {loadingPoints ? (
@@ -222,7 +215,6 @@ export function ProposeSwapModal({
             )}
           </div>
 
-          {/*  Message */}
           <div>
             <Label>Message </Label>
             <Textarea

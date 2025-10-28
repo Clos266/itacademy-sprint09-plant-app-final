@@ -16,29 +16,6 @@ interface BaseCardProps {
   className?: string;
 }
 
-/**
- * 🃏 BaseCard - Componente base reutilizable para todas las cards
- *
- * Proporciona estructura común para:
- * - Imagen con aspect ratio cuadrado
- * - Badge superpuesto en esquina superior izquierda
- * - Hover effects y cursor pointer
- * - Layout responsivo usando grid configs centralizados
- * - Spacing consistente
- *
- * @example
- * ```tsx
- * <BaseCard
- *   imageUrl="/plant.jpg"
- *   imageAlt="Monstera Deliciosa"
- *   badge={{ variant: "default", text: "Available" }}
- *   onClick={() => handleClick()}
- * >
- *   <CardField label="Name" value="Monstera" />
- *   <CardField label="Type" value="Indoor Plant" />
- * </BaseCard>
- * ```
- */
 export function BaseCard({
   imageUrl,
   imageAlt,

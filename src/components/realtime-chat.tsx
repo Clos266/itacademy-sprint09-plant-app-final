@@ -16,14 +16,6 @@ interface RealtimeChatProps {
   messages?: ChatMessage[];
 }
 
-/**
- * Realtime chat component
- * @param roomName - The name of the room to join. Each room is a unique chat.
- * @param username - The username of the user
- * @param onMessage - The callback function to handle the messages. Useful if you want to store the messages in a database.
- * @param messages - The messages to display in the chat. Useful if you want to display messages from a database.
- * @returns The chat component
- */
 export const RealtimeChat = ({
   roomName,
   username,
@@ -46,15 +38,12 @@ export const RealtimeChat = ({
   });
   const [newMessage, setNewMessage] = useState("");
 
-  // Merge realtime messages with initial messages
   const allMessages = useMemo(() => {
     const mergedMessages = [...initialMessages, ...realtimeMessages];
-    // Remove duplicates based on message id
     const uniqueMessages = mergedMessages.filter(
       (message, index, self) =>
         index === self.findIndex((m) => m.id === message.id)
     );
-    // Sort by creation date
     const sortedMessages = uniqueMessages.sort((a, b) =>
       a.createdAt.localeCompare(b.createdAt)
     );
@@ -69,7 +58,6 @@ export const RealtimeChat = ({
   }, [allMessages, onMessage]);
 
   useEffect(() => {
-    // Scroll to bottom whenever messages change
     scrollToBottom();
   }, [allMessages, scrollToBottom]);
 
@@ -86,7 +74,6 @@ export const RealtimeChat = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-background text-foreground antialiased">
-      {/* Messages */}
       <div ref={containerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {allMessages.length === 0 ? (
           <div className="text-center text-sm text-muted-foreground">

@@ -30,7 +30,6 @@ import { SPACING } from "@/constants/layouts";
 type Swap = Database["public"]["Tables"]["swaps"]["Row"];
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-// Using centralized SwapStatus type from constants/status.ts
 
 interface FullSwap extends Swap {
   senderPlant?: Plant | null;
@@ -42,7 +41,6 @@ interface FullSwap extends Swap {
 type SortableColumn = (typeof DOMAIN_FILTER_TYPES.SWAPS.SORT_BY)[number];
 type SortDirection = "asc" | "desc";
 
-// Helper function to map database status to UI status using centralized constants
 const mapSwapStatus = (dbStatus: string): SwapStatus => {
   switch (dbStatus) {
     case "pending":
@@ -83,7 +81,6 @@ export default function SwapsPage() {
     );
   }, []);
 
-  // Search handlers
   const handleSearchChange = useCallback((value: string) => {
     setSearchQuery(value);
   }, []);
@@ -92,7 +89,6 @@ export default function SwapsPage() {
     setSearchQuery("");
   }, []);
 
-  // Accept swap handler
   const handleAcceptSwap = useCallback(
     async (swap: FullSwap) => {
       try {
@@ -112,7 +108,6 @@ export default function SwapsPage() {
     [reload]
   );
 
-  // Decline swap handler
   const handleDeclineSwap = useCallback(
     async (swap: FullSwap) => {
       try {
@@ -157,7 +152,6 @@ export default function SwapsPage() {
   const filteredAndSortedSwaps = useMemo(() => {
     let filtered = swaps;
 
-    // Apply search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((swap) => {
@@ -177,7 +171,6 @@ export default function SwapsPage() {
       });
     }
 
-    // Apply status filter
     if (activeStatuses.length > 0) {
       filtered = filtered.filter((swap) =>
         activeStatuses.includes(mapSwapStatus(swap.status))
@@ -188,7 +181,6 @@ export default function SwapsPage() {
       const A = a[sortColumn];
       const B = b[sortColumn];
 
-      // Handle different data types properly
       if (typeof A === "string" && typeof B === "string") {
         return sortDir === "asc" ? A.localeCompare(B) : B.localeCompare(A);
       }
@@ -197,7 +189,6 @@ export default function SwapsPage() {
         return sortDir === "asc" ? A - B : B - A;
       }
 
-      // Handle date strings (created_at)
       if (
         sortColumn === "created_at" &&
         typeof A === "string" &&
@@ -212,7 +203,6 @@ export default function SwapsPage() {
     });
   }, [swaps, activeStatuses, sortColumn, sortDir, searchQuery]);
 
-  // Use pagination hook instead of manual pagination
   const { page, totalPages, paginated, goToPage } = usePagination(
     filteredAndSortedSwaps,
     PAGINATION_SIZES.TABLE
@@ -362,7 +352,6 @@ export default function SwapsPage() {
 
               return (
                 <div className="flex gap-2 items-center">
-                  {/* For new swaps, show Accept/Decline buttons only */}
                   {isNewReceiver ? (
                     <>
                       <Button
@@ -383,7 +372,6 @@ export default function SwapsPage() {
                       </Button>
                     </>
                   ) : (
-                    /* For processed swaps, show View button only */
                     <Button
                       size="sm"
                       variant="outline"

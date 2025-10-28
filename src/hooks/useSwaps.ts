@@ -17,16 +17,12 @@ export interface FullSwap extends Swap {
   receiverPlant: Plant | null;
 }
 
-/**
- * 🧩 Hook para gestionar los swaps del usuario (con realtime)
- */
 export function useSwaps() {
   const [swaps, setSwaps] = useState<FullSwap[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
 
-  // 🔐 Obtener usuario actual
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -35,7 +31,6 @@ export function useSwaps() {
     getUser();
   }, []);
 
-  // 🔐 Obtener nombre de usuario
   useEffect(() => {
     const getProfile = async () => {
       if (!userId) return;
@@ -49,7 +44,6 @@ export function useSwaps() {
     getProfile();
   }, [userId]);
 
-  // 🌱 Cargar swaps iniciales
   const loadSwaps = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
@@ -63,7 +57,6 @@ export function useSwaps() {
     }
   }, [userId]);
 
-  // ⚡ Escuchar cambios en tiempo real
   useEffect(() => {
     if (!userId) return;
 
@@ -93,7 +86,6 @@ export function useSwaps() {
     return unsubscribe;
   }, [userId]);
 
-  // 🔁 Recarga manual
   useEffect(() => {
     if (userId) loadSwaps();
   }, [userId, loadSwaps]);

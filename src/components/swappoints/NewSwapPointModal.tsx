@@ -33,7 +33,6 @@ export function NewSwapPointButton() {
     image_url: "",
   });
 
-  // 🗺️ Inicializar mapa al abrir el modal
   useEffect(() => {
     if (!open) return;
     const timer = setTimeout(() => setReady(true), 150);
@@ -43,7 +42,6 @@ export function NewSwapPointButton() {
   useEffect(() => {
     if (!ready || !mapContainerRef.current) return;
 
-    // limpia el mapa anterior si existe
     if (mapRef.current) {
       mapRef.current.remove();
       mapRef.current = null;
@@ -60,7 +58,6 @@ export function NewSwapPointButton() {
       .setLngLat([data.lng, data.lat])
       .addTo(map);
 
-    // 🔍 Geocoder (buscador)
     const geocoder = new MapboxGeocoder({
       accessToken: mapboxgl.accessToken!,
       mapboxgl: mapboxgl as any,
@@ -74,7 +71,6 @@ export function NewSwapPointButton() {
       language: "es",
     });
 
-    // Añadir buscador sobre el mapa
     const geocoderContainer = document.createElement("div");
     geocoderContainer.className = "geocoder-container";
     mapContainerRef.current.parentElement?.insertBefore(
@@ -83,7 +79,6 @@ export function NewSwapPointButton() {
     );
     geocoder.addTo(geocoderContainer);
 
-    // Selección desde el buscador
     geocoder.on("result", (e: any) => {
       const coords = e.result.center as [number, number];
       const place = e.result.place_name ?? "";
@@ -102,7 +97,6 @@ export function NewSwapPointButton() {
       }));
     });
 
-    // 📍 Reverse geocode al arrastrar
     marker.on("dragend", async () => {
       const { lng, lat } = marker.getLngLat();
       try {
@@ -131,7 +125,6 @@ export function NewSwapPointButton() {
     };
   }, [ready]);
 
-  // 🧹 Reset form
   const resetForm = () => {
     setData({
       name: "",
@@ -145,7 +138,6 @@ export function NewSwapPointButton() {
     setReady(false);
   };
 
-  // 🔄 Handle modal open/close
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
     if (!nextOpen) {
@@ -153,7 +145,6 @@ export function NewSwapPointButton() {
     }
   };
 
-  // 💾 Guardar en Supabase
   const handleSave = async () => {
     if (!data.name.trim()) {
       showError("Please enter a name for the swap point.");
@@ -173,7 +164,7 @@ export function NewSwapPointButton() {
       if (error) throw error;
 
       showSuccess("Swap point created successfully! 🌿");
-      setOpen(false); // handleOpenChange will reset form
+      setOpen(false);
     } catch (err) {
       console.error("Error saving swap point:", err);
       showError("Error saving swap point. Please try again.");
@@ -240,7 +231,6 @@ export function NewSwapPointButton() {
               </div>
             </div>
 
-            {/* 🗺️ Mapa compacto */}
             <div className="space-y-1">
               <Label>Location</Label>
               <div
@@ -257,7 +247,6 @@ export function NewSwapPointButton() {
               <p>Lng: {data.lng.toFixed(4)}</p>
             </div>
 
-            {/* 📸 Subida de imagen */}
             <div>
               <ImageUploader
                 bucket="swap_points"

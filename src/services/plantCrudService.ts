@@ -2,7 +2,6 @@ import { supabase } from "./supabaseClient";
 import type { Database } from "@/types/supabase";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
-// 🔹 Tipos base
 export type Plant = Database["public"]["Tables"]["plants"]["Row"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type PlantInsert = Omit<Plant, "id" | "created_at">;
@@ -11,7 +10,6 @@ export type PlantWithProfile = Plant & { profile?: Profile | null };
 
 const TABLE = "plants" as const;
 
-// 🌿 Obtener todas las plantas
 export async function fetchPlants(
   withOwner = false
 ): Promise<PlantWithProfile[]> {
@@ -32,7 +30,6 @@ export async function fetchPlants(
   return res.data;
 }
 
-// 🌱 Obtener plantas por usuario
 export async function fetchPlantsByUser(userId: string): Promise<Plant[]> {
   const { data, error } = await supabase
     .from(TABLE)
@@ -44,7 +41,6 @@ export async function fetchPlantsByUser(userId: string): Promise<Plant[]> {
   return data ?? [];
 }
 
-// 🔍 Buscar plantas
 export async function searchPlants(
   term: string,
   onlyAvailable = false
@@ -63,7 +59,6 @@ export async function searchPlants(
   return data ?? [];
 }
 
-// ➕ Agregar una planta
 export async function addPlant(plant: PlantInsert): Promise<Plant> {
   if (!plant.user_id) throw new Error("Missing user_id");
   const { data, error } = await supabase
@@ -75,7 +70,6 @@ export async function addPlant(plant: PlantInsert): Promise<Plant> {
   return data;
 }
 
-// ✏️ Actualizar planta
 export async function updatePlant(
   id: number,
   updates: PlantUpdate
@@ -90,13 +84,11 @@ export async function updatePlant(
   return data;
 }
 
-// ❌ Borrar planta
 export async function deletePlant(id: number): Promise<void> {
   const { error } = await supabase.from(TABLE).delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
 
-// 🌾 Obtener una planta por ID
 export async function getPlantById(
   id: number,
   withOwner = false
@@ -117,7 +109,6 @@ export async function getPlantById(
   return res.data;
 }
 
-// 🌸 Obtener plantas disponibles
 export async function fetchAvailablePlants(): Promise<Plant[]> {
   const { data, error } = await supabase
     .from(TABLE)
@@ -128,8 +119,6 @@ export async function fetchAvailablePlants(): Promise<Plant[]> {
   if (error) throw new Error(error.message);
   return data ?? [];
 }
-
-// 🌿 Escuchar cambios en tiempo real
 
 export function subscribeToUserPlants(
   userId: string,

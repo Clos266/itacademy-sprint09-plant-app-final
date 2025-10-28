@@ -29,7 +29,6 @@ export function AppHeader() {
   const [user, setUser] = useState<SupabaseUser>(null);
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
 
-  // 🔹 Cargar perfil actual
   const loadProfile = async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
@@ -46,12 +45,10 @@ export function AppHeader() {
   useEffect(() => {
     loadProfile();
 
-    // ✅ 1️⃣ Detectar cambios de sesión (login/logout/signup)
     const { data: authListener } = supabase.auth.onAuthStateChange(() => {
       loadProfile();
     });
 
-    // ✅ 2️⃣ Detectar cambios en Supabase (Realtime)
     const channel = supabase
       .channel("realtime:profiles")
       .on(
@@ -69,7 +66,6 @@ export function AppHeader() {
       )
       .subscribe();
 
-    // ✅ 3️⃣ Detectar actualizaciones locales (por ejemplo, al guardar en el modal)
     const handleLocalUpdate = () => loadProfile();
     window.addEventListener("profileUpdated", handleLocalUpdate);
 
@@ -83,7 +79,6 @@ export function AppHeader() {
   return (
     <header className="bg-background sticky top-0 z-50 border-b">
       <div className="w-full max-w-7xl mx-auto flex items-center gap-2 h-14 px-4 md:px-8">
-        {/* 🌿 Logo + Sidebar */}
         <div className="flex items-center gap-2 md:gap-0">
           <AppSidebar />
           <Link to="/">
@@ -92,7 +87,6 @@ export function AppHeader() {
         </div>
 
         <div className="ml-4 flex-1 flex items-center justify-between">
-          {/* 📋 Main Menu */}
           <div className="flex-1">
             <nav className="hidden md:flex gap-1">
               {mainMenu.map((item, index) => (
@@ -115,7 +109,6 @@ export function AppHeader() {
             </nav>
           </div>
 
-          {/* 👤 User Menu */}
           <nav className="flex items-center gap-2">
             {profile && (
               <div className="hidden sm:flex flex-col items-end mr-2">
@@ -179,7 +172,6 @@ export function AppHeader() {
         </div>
       </div>
 
-      {/* 🧩 Profile Edit Modal */}
       <EditProfileModal open={openEdit} onOpenChange={setOpenEdit} />
     </header>
   );

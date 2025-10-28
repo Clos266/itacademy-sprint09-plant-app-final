@@ -9,28 +9,6 @@ interface CardFieldProps {
   valueClassName?: string;
 }
 
-/**
- * 🏷️ CardField - Componente para mostrar campos de información en cards
- *
- * Estructura consistente para mostrar:
- * - Label en mayúsculas con estilo muted
- * - Valor con tipografía destacada
- * - Soporte para contenido React (iconos, imágenes, etc.)
- * - Control de span para ocupar 1 o 2 columnas del grid
- *
- * @example
- * ```tsx
- * // Campo simple de 1 columna
- * <CardField label="Common Name" value="Monstera" />
- *
- * // Campo de 2 columnas con contenido React
- * <CardField
- *   label="Description"
- *   value={<span className="italic">Long description text here</span>}
- *   span="col-span-2"
- * />
- * ```
- */
 export function CardField({
   label,
   value,

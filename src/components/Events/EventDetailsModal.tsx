@@ -42,7 +42,6 @@ export function EventDetailsModal({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<mapboxgl.Map | null>(null);
 
-  // 🔹 Cargar evento + organizer + swap point
   useEffect(() => {
     if (!eventId || !open) return;
 
@@ -76,14 +75,12 @@ export function EventDetailsModal({
     load();
   }, [eventId, open]);
 
-  // 🗺️ Inicializar mapa (si hay swap point con coords)
   useEffect(() => {
     const sp = event?.swap_points;
     const canShowMap =
       !!sp && typeof sp.lat === "number" && typeof sp.lng === "number";
 
     if (!open || !mapContainerRef.current || !canShowMap) {
-      // Limpieza si no procede mostrar mapa
       if (mapInstance.current) {
         try {
           mapInstance.current.remove();
@@ -96,7 +93,6 @@ export function EventDetailsModal({
       return;
     }
 
-    // 💡 eliminar mapa previo por si reabres el modal
     if (mapInstance.current) {
       try {
         mapInstance.current.remove();
@@ -107,7 +103,6 @@ export function EventDetailsModal({
       }
     }
 
-    // Asegura render del contenedor antes de instanciar
     const raf = requestAnimationFrame(() => {
       if (!mapContainerRef.current) return;
 
@@ -125,7 +120,6 @@ export function EventDetailsModal({
       mapInstance.current = map;
     });
 
-    // ✅ cleanup robusto
     return () => {
       cancelAnimationFrame(raf);
       if (mapInstance.current) {
@@ -144,7 +138,6 @@ export function EventDetailsModal({
 
   const isUpcoming = event?.date ? new Date(event.date) > new Date() : false;
 
-  // Custom footer con botones específicos del evento
   const customFooter = event && !loading && (
     <div className="flex justify-end gap-2">
       <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -181,7 +174,7 @@ export function EventDetailsModal({
             "Detailed information about this event and its location."
       }
       size="xl"
-      showFooter={false} // Usamos footer personalizado
+      showFooter={false}
     >
       <ScrollArea className="max-h-[70vh]">
         {loading ? (
@@ -192,7 +185,6 @@ export function EventDetailsModal({
           </div>
         ) : (
           <>
-            {/* Header info */}
             <div className="flex flex-col items-center mb-4">
               <div className="mt-2 flex items-center gap-2">
                 <Badge variant={isUpcoming ? "default" : "secondary"}>
@@ -205,7 +197,6 @@ export function EventDetailsModal({
               </div>
             </div>
 
-            {/* Imagen del evento */}
             <div className="relative mx-auto aspect-square w-full max-w-[220px] rounded-xl overflow-hidden border border-border bg-muted">
               <img
                 src={event.image_url || "/imagenotfound.jpeg"}
@@ -214,7 +205,6 @@ export function EventDetailsModal({
               />
             </div>
 
-            {/* Organizer + ubicación textual */}
             <div className="mt-4 text-sm text-muted-foreground space-y-2">
               {event.profiles && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
@@ -244,7 +234,6 @@ export function EventDetailsModal({
               )}
             </div>
 
-            {/* Mapa (si hay swap point con coords) */}
             {event.swap_points &&
               typeof event.swap_points.lat === "number" &&
               typeof event.swap_points.lng === "number" && (
@@ -257,7 +246,6 @@ export function EventDetailsModal({
         )}
       </ScrollArea>
 
-      {/* Custom footer */}
       {customFooter}
     </ModalDialog>
   );

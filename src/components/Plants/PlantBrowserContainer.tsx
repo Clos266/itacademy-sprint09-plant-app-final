@@ -19,7 +19,6 @@ import { PAGINATION_SIZES } from "@/constants/pagination";
 import { DOMAIN_FILTER_TYPES } from "@/constants/filterTypes";
 import type { FilterConfig } from "@/types/filtering";
 
-// UI configuration for the filter bar (using centralized constants)
 const PLANT_FILTER_CONFIG: FilterConfig[] = [
   {
     key: "search",
@@ -35,36 +34,11 @@ const PLANT_FILTER_CONFIG: FilterConfig[] = [
 
 interface PlantBrowserContainerProps {
   className?: string;
-  // Future enhancement: Callback for swap proposals
-  // onPlantSwapProposed?: (targetPlant: FullPlant, userPlant: FullPlant) => void;
 }
 
-/**
- * 🌿 Plant Browser Container
- *
- * Container component that encapsulates all the business logic for browsing
- * and swapping plants. This component handles:
- * - Data loading and management
- * - Filtering and pagination
- * - Swap modal interactions
- * - Validation logic
- *
- * The container separates business logic from presentation, making it easier
- * to test and maintain. It uses specialized services and utilities for
- * cleaner separation of concerns.
- *
- * @example
- * ```tsx
- * <PlantBrowserContainer
- *   className="custom-styles"
- *   onPlantSwapProposed={(target, user) => handleSwap(target, user)}
- * />
- * ```
- */
 export function PlantBrowserContainer({
   className = "",
 }: PlantBrowserContainerProps) {
-  // 🌱 Core state management
   const [plants, setPlants] = useState<FullPlant[]>([]);
   const [userPlants, setUserPlants] = useState<FullPlant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,11 +47,9 @@ export function PlantBrowserContainer({
     email?: string;
   } | null>(null);
 
-  // 🔄 Swap modal state
   const [openSwap, setOpenSwap] = useState(false);
   const [targetPlant, setTargetPlant] = useState<FullPlant | null>(null);
 
-  // 🎯 Filtering logic using centralized configuration
   const {
     filteredItems: filteredPlants,
     filters,
@@ -94,18 +66,15 @@ export function PlantBrowserContainer({
     },
   });
 
-  // 📄 Pagination with filtered results
   const { page, totalPages, paginated, goToPage } = usePagination(
     filteredPlants,
     PAGINATION_SIZES.CARDS
   );
 
-  // 🚀 Initialize availability filter to "available" for better UX
   useEffect(() => {
     updateFilter("custom", { availability: "available" });
   }, [updateFilter]);
 
-  // 📥 Load plants data using specialized service
   useEffect(() => {
     const loadBrowsingData = async () => {
       try {
@@ -133,14 +102,12 @@ export function PlantBrowserContainer({
     loadBrowsingData();
   }, []);
 
-  // 🎯 Plant interaction handlers with enhanced validation
   const handlePlantClick = async (plant: FullPlant) => {
     if (!currentUser) {
       showError("Please log in to propose swaps.");
       return;
     }
 
-    // Use centralized validation logic
     const validation = validateSwapEligibility(userPlants, plant);
 
     if (!validation.isValid) {
@@ -149,7 +116,6 @@ export function PlantBrowserContainer({
     }
 
     if (validation.warningMessage) {
-      // Could show a confirmation dialog here
       console.warn(validation.warningMessage);
     }
 
@@ -163,7 +129,6 @@ export function PlantBrowserContainer({
     } else if (key === "availability") {
       updateFilter("custom", { availability: value });
     }
-    // Reset to first page when filters change
     goToPage(1);
   };
 
@@ -177,13 +142,6 @@ export function PlantBrowserContainer({
     setTargetPlant(null);
   };
 
-  // Future enhancement: Handle swap success callback
-  // const handleSwapSuccess = () => {
-  //   // Could notify parent component about successful swaps
-  //   handleSwapModalClose();
-  // };
-
-  // 🎨 Render logic
   if (loading) {
     return (
       <div className={className}>
@@ -196,7 +154,6 @@ export function PlantBrowserContainer({
 
   return (
     <div className={className}>
-      {/* Filtering and search */}
       <Card>
         <CardContent>
           <EnhancedFilterBar
@@ -217,7 +174,6 @@ export function PlantBrowserContainer({
         </CardContent>
       </Card>
 
-      {/* Plant Grid */}
       <PaginatedCards
         data={paginated}
         page={page}
@@ -233,7 +189,6 @@ export function PlantBrowserContainer({
         )}
       />
 
-      {/* Swap Proposal Modal */}
       <ProposeSwapModal
         open={openSwap}
         onOpenChange={handleSwapModalClose}
@@ -244,12 +199,6 @@ export function PlantBrowserContainer({
   );
 }
 
-/**
- * 📊 Browser Statistics Component (optional enhancement)
- *
- * Shows browsing statistics as a separate component that can be
- * included in dashboards or as additional information.
- */
 export function PlantBrowserStats({
   userId,
   className = "",

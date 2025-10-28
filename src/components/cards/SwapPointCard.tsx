@@ -10,23 +10,6 @@ interface SwapPointCardProps {
   onClick: (id: number) => void;
 }
 
-/**
- * 📍 SwapPointCard - Card específica para mostrar puntos de intercambio
- *
- * Basada en BaseCard, incluye:
- * - Badge fijo "Swap Point"
- * - Información del punto (nombre y descripción)
- * - Dirección completa con icono de ubicación
- * - Layout optimizado para mostrar información de localización
- *
- * @example
- * ```tsx
- * <SwapPointCard
- *   swapPoint={swapPoint}
- *   onClick={(id) => openSwapPointDetails(id)}
- * />
- * ```
- */
 export function SwapPointCard({ swapPoint, onClick }: SwapPointCardProps) {
   return (
     <BaseCard

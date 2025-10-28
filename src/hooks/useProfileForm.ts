@@ -34,7 +34,6 @@ export function useProfileForm({
     return true;
   }, [form.username]);
 
-  // Optimized field handlers - prevent unnecessary re-renders
   const handleUsernameChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setForm((prev) => ({ ...prev, username: e.target.value }));
@@ -60,7 +59,6 @@ export function useProfileForm({
     setForm((prev) => ({ ...prev, avatar_url: url }));
   }, []);
 
-  // Generic field updater for programmatic changes
   const updateField = useCallback(
     (field: keyof ProfileFormData, value: string) => {
       setForm((prev) => ({ ...prev, [field]: value }));
@@ -68,7 +66,6 @@ export function useProfileForm({
     []
   );
 
-  // Reset form to initial or provided data
   const resetForm = useCallback(
     (newData?: Partial<ProfileFormData>) => {
       const dataToUse = newData || initialData;
@@ -82,14 +79,12 @@ export function useProfileForm({
     [initialData]
   );
 
-  // Unified save handler with validation
   const handleSave = useCallback(async () => {
     if (!validateForm()) return;
 
     try {
       setSaving(true);
 
-      // Prepare clean form data (trim strings, convert empty to null)
       const cleanFormData: ProfileFormData = {
         username: form.username.trim(),
         ciudad: form.ciudad.trim() || "",
@@ -108,7 +103,6 @@ export function useProfileForm({
     }
   }, [form, validateForm, onSave]);
 
-  // Computed values
   const isValid = form.username.trim().length > 0;
   const isFormDirty =
     JSON.stringify(form) !==
@@ -120,19 +114,16 @@ export function useProfileForm({
     });
 
   return {
-    // Form state
     form,
     saving,
     isValid,
     isFormDirty,
 
-    // Field handlers
     handleUsernameChange,
     handleCiudadChange,
     handleCpChange,
     handleImageUpload,
 
-    // Utility functions
     updateField,
     resetForm,
     handleSave,

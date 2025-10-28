@@ -27,7 +27,6 @@ export function NewPlantButton() {
     image_url: "",
   });
 
-  // 🔍 Autocompletado
   const handleCommonNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const results = Object.keys(plantSuggestions).filter((key) =>
@@ -61,13 +60,10 @@ export function NewPlantButton() {
     setShowSuggestions(false);
   };
 
-  // 📸 Recibe URL pública al subir
   const handleImageUpload = (publicUrl: string) => {
     setPlantData((prev) => ({ ...prev, image_url: publicUrl }));
     setUploading(false);
   };
-
-  // 🧹 Reset form
   const resetForm = () => {
     setPlantData({
       nombre_comun: "",
@@ -83,7 +79,6 @@ export function NewPlantButton() {
     setFiltered([]);
   };
 
-  // 🔄 Handle modal open/close
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
     if (!nextOpen) {
@@ -91,7 +86,6 @@ export function NewPlantButton() {
     }
   };
 
-  // 💾 Guardar en Supabase
   const handleSave = async () => {
     if (!plantData.nombre_comun.trim()) {
       showError("Please enter a plant name.");
@@ -155,7 +149,6 @@ export function NewPlantButton() {
             />
           </div>
 
-          {/* 🌿 Common Name with autocomplete */}
           <div className="relative">
             <Label>Common Name *</Label>
             <Input
@@ -182,7 +175,6 @@ export function NewPlantButton() {
             )}
           </div>
 
-          {/* 🔬 Scientific Name */}
           <div>
             <Label>Scientific Name</Label>
             <Input
@@ -197,7 +189,6 @@ export function NewPlantButton() {
             />
           </div>
 
-          {/* 🧬 Species / Family */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Species</Label>

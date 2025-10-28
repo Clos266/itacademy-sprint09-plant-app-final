@@ -15,9 +15,6 @@ const TABLE = "swaps" as const;
 const MSG_TABLE = "swap_messages" as const;
 const POINTS_TABLE = "swap_points" as const;
 
-/* ============================================================
- 🌿 FETCH SWAPS CON RELACIONES
-============================================================ */
 export async function fetchSwapsWithRelations(userId?: string) {
   let query = supabase
     .from(TABLE)
@@ -52,9 +49,6 @@ export async function fetchSwapsWithRelations(userId?: string) {
   }));
 }
 
-/* ============================================================
- ➕ CREAR PROPUESTA DE SWAP
-============================================================ */
 export async function addSwapProposal(params: {
   sender_id: string;
   receiver_id: string;
@@ -104,9 +98,6 @@ export async function addSwapProposal(params: {
   return data;
 }
 
-/* ============================================================
- 🔄 ACTUALIZAR ESTADOS
-============================================================ */
 export async function acceptSwap(id: number) {
   const { data, error } = await supabase
     .from(TABLE)
@@ -149,9 +140,6 @@ export async function deleteSwap(id: number) {
   showSuccess("Swap cancelled.");
 }
 
-/* ============================================================
- ⚡ SUSCRIPCIÓN REALTIME
-============================================================ */
 export function subscribeToUserSwaps(
   userId: string,
   onChange: (payload: RealtimePostgresChangesPayload<Swap>) => void
@@ -176,9 +164,6 @@ export function subscribeToUserSwaps(
   return () => supabase.removeChannel(channel);
 }
 
-/* ============================================================
- 📍 PUNTOS DE INTERCAMBIO
-============================================================ */
 export async function fetchSwapPoints(): Promise<SwapPoint[]> {
   const { data, error } = await supabase
     .from(POINTS_TABLE)
@@ -187,7 +172,6 @@ export async function fetchSwapPoints(): Promise<SwapPoint[]> {
   if (error) throw new Error(error.message);
   return data ?? [];
 }
-/** 🔁 Actualizar estado del swap y disponibilidad de plantas */
 export async function updateSwapStatusWithAvailability(
   swapId: number,
   status: "accepted" | "rejected" | "pending" | "completed",
@@ -201,9 +185,7 @@ export async function updateSwapStatusWithAvailability(
 
   if (swapError) throw swapError;
 
-  // 🪴 Actualizar disponibilidad de plantas
   if (status === "accepted" || status === "pending") {
-    // 🔒 Bloquear plantas
     const { error: plantError } = await supabase
       .from("plants")
       .update({ disponible: false })
@@ -211,7 +193,6 @@ export async function updateSwapStatusWithAvailability(
 
     if (plantError) throw plantError;
   } else if (status === "rejected") {
-    // 🔓 Revertir disponibilidad
     const { error: revertError } = await supabase
       .from("plants")
       .update({ disponible: true })
@@ -219,7 +200,6 @@ export async function updateSwapStatusWithAvailability(
 
     if (revertError) throw revertError;
   } else if (status === "completed") {
-    // 🌱 Liberar plantas al completar el intercambio
     const { error: completeError } = await supabase
       .from("plants")
       .update({ disponible: true })
@@ -235,7 +215,6 @@ export async function markSwapAsCompletedByUser(
   swapId: number,
   userId: string
 ) {
-  // 1️⃣ Obtener el swap actual con las plantas
   const { data: swap, error: fetchError } = await supabase
     .from("swaps")
     .select(
@@ -254,7 +233,6 @@ export async function markSwapAsCompletedByUser(
 
   if (fetchError || !swap) throw fetchError;
 
-  // ⚙️ Asegurar que las relaciones no sean arrays
   const senderPlant = Array.isArray(swap.senderPlant)
     ? swap.senderPlant[0]
     : swap.senderPlant;
@@ -262,11 +240,9 @@ export async function markSwapAsCompletedByUser(
     ? swap.receiverPlant[0]
     : swap.receiverPlant;
 
-  // 2️⃣ Determinar si es sender o receiver
   const isSender = swap.sender_id === userId;
   const updateField = isSender ? "sender_completed" : "receiver_completed";
 
-  // 3️⃣ Actualizar su campo de completado
   const { error: updateError } = await supabase
     .from("swaps")
     .update({ [updateField]: true })
@@ -274,7 +250,6 @@ export async function markSwapAsCompletedByUser(
 
   if (updateError) throw updateError;
 
-  // 4️⃣ Si ambos completaron → marcar el swap como completed + intercambiar dueños
   if (
     (isSender && swap.receiver_completed) ||
     (!isSender && swap.sender_completed)
@@ -286,7 +261,6 @@ export async function markSwapAsCompletedByUser(
 
     if (completeError) throw completeError;
 
-    // 🪴 Intercambiar dueños de las plantas
     if (senderPlant?.id && receiverPlant?.id) {
       const updates = [
         supabase

@@ -56,11 +56,9 @@ export function SwapPointDetailsModal({
     loadPoint();
   }, [swapPointId, open]);
 
-  // 🗺️ Inicializar mapa con limpieza segura
   useEffect(() => {
     if (!point || !open || !mapContainerRef.current) return;
 
-    // 🧹 Limpieza de mapa anterior
     if (mapInstance.current) {
       try {
         mapInstance.current.remove();
@@ -70,7 +68,6 @@ export function SwapPointDetailsModal({
       mapInstance.current = null;
     }
 
-    // 🗺️ Crear mapa nuevo
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/streets-v12",
@@ -78,14 +75,12 @@ export function SwapPointDetailsModal({
       zoom: 13,
     });
 
-    // 📍 Agregar marcador
     new mapboxgl.Marker({ color: "#16a34a" })
       .setLngLat([point.lng, point.lat])
       .addTo(map);
 
     mapInstance.current = map;
 
-    // ✅ Cleanup seguro
     return () => {
       if (mapInstance.current) {
         try {
@@ -101,7 +96,6 @@ export function SwapPointDetailsModal({
 
   if (!open || !swapPointId) return null;
 
-  // Custom footer with swap point specific actions
   const customFooter = point && !loading && (
     <div className="flex justify-end gap-2">
       <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -143,14 +137,12 @@ export function SwapPointDetailsModal({
           </div>
         ) : (
           <div className="space-y-4">
-            {/* 📍 Header info */}
             <div className="flex flex-col items-center mb-4">
               <Badge className="mt-2" variant="default">
                 Swap Point
               </Badge>
             </div>
 
-            {/* 🖼️ Imagen */}
             <div className="relative mx-auto aspect-square w-full max-w-[220px] rounded-xl overflow-hidden border border-border bg-muted">
               <img
                 src={point.image_url || "/imagenotfound.jpeg"}
@@ -159,7 +151,6 @@ export function SwapPointDetailsModal({
               />
             </div>
 
-            {/* 📄 Info */}
             <div className="mt-4 text-sm text-muted-foreground space-y-1">
               <p className="flex items-center">
                 <MapPin className="w-4 h-4 mr-1 text-primary" />
@@ -171,7 +162,6 @@ export function SwapPointDetailsModal({
               </p>
             </div>
 
-            {/* 🗺️ Mapa */}
             <div
               ref={mapContainerRef}
               className="w-full h-56 sm:h-64 mt-4 rounded-lg border border-border overflow-hidden"
@@ -180,7 +170,6 @@ export function SwapPointDetailsModal({
         )}
       </ScrollArea>
 
-      {/* Custom footer */}
       {customFooter}
     </ModalDialog>
   );

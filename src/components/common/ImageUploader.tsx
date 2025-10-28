@@ -30,19 +30,16 @@ export function ImageUploader({
 
       setUploading(true);
 
-      // Generar un nombre único
       const fileExt = file.name.split(".").pop();
       const fileName = `${pathPrefix}-${Date.now()}.${fileExt}`;
       const filePath = `${pathPrefix ? `${pathPrefix}/` : ""}${fileName}`;
 
-      // Subir al bucket
       const { error } = await supabase.storage
         .from(bucket)
         .upload(filePath, file, { upsert: true });
 
       if (error) throw error;
 
-      // Obtener URL pública
       const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
       const publicUrl = data.publicUrl;
 
@@ -57,7 +54,6 @@ export function ImageUploader({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {/* Vista previa */}
       <div className="w-32 h-32 rounded-lg overflow-hidden border border-border flex items-center justify-center bg-muted">
         {preview ? (
           <img
@@ -70,7 +66,6 @@ export function ImageUploader({
         )}
       </div>
 
-      {/* Botones */}
       <div className="flex gap-2">
         <Button
           type="button"
@@ -86,7 +81,7 @@ export function ImageUploader({
           ref={fileInputRef}
           className="hidden"
           accept="image/*"
-          capture="environment" // permite tomar foto con cámara en móvil
+          capture="environment"
           onChange={handleFileChange}
         />
       </div>

@@ -25,8 +25,6 @@ export default function CreateProfilePage() {
     onSave: async (formData: ProfileFormData) => {
       if (!user) throw new Error("User not authenticated");
 
-      // Using upsert instead of insert to handle cases where the profile already exists
-      // (database trigger on_auth_user_created may have already created a basic profile)
       const { error } = await supabase.from("profiles").upsert({
         id: user.id,
         email: user.email,
@@ -133,35 +131,3 @@ export default function CreateProfilePage() {
     </div>
   );
 }
-
-/*
-  TODO: Refactoring opportunities identified:
-  
-  1. useProfileForm hook extraction:
-     - Form state management (ProfileFormData)
-     - Optimized field handlers (handleUsernameChange, handleCiudadChange, handleCpChange)
-     - Form validation logic (currently basic, ready for Zod integration)
-     - Form submission logic (handleSave with Supabase integration)
-     
-  2. useAuth hook extraction:
-     - User authentication state management
-     - Session validation and error handling
-     - Navigation logic for unauthenticated users
-     
-  3. Zod schema integration ready:
-     - ProfileFormData interface can be replaced with inferred Zod type
-     - Basic validation is isolated and ready for schema replacement
-     - Error handling structure supports detailed validation messages
-     
-  4. Service layer improvements:
-     - Direct Supabase calls can be replaced with userService.createUserProfile
-     - Error handling is standardized for service integration
-     
-  Current improvements implemented:
-  - ✅ Full TypeScript typing (User, ProfileFormData)
-  - ✅ Optimized handlers with useCallback
-  - ✅ Enhanced error handling with proper type guards
-  - ✅ Improved form UX (placeholders, disabled states, validation)
-  - ✅ Better accessibility (htmlFor, required, maxLength)
-  - ✅ Performance optimization (no inline objects or functions)
-*/

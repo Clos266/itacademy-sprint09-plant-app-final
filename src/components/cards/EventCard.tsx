@@ -11,23 +11,6 @@ interface EventCardProps {
   onClick: (id: number) => void;
 }
 
-/**
- * 📅 EventCard - Card específica para mostrar eventos
- *
- * Basada en BaseCard, incluye:
- * - Badge de estado temporal (Upcoming/Past)
- * - Información del evento (título y descripción)
- * - Datos de ubicación y fecha con iconos
- * - Logic para determinar si es evento futuro o pasado
- *
- * @example
- * ```tsx
- * <EventCard
- *   event={event}
- *   onClick={(id) => openEventDetails(id)}
- * />
- * ```
- */
 export function EventCard({ event, onClick }: EventCardProps) {
   const isUpcoming = new Date(event.date) > new Date();
 

@@ -1,4 +1,3 @@
-// src/services/useService.ts
 import { supabase } from "./supabaseClient";
 import type { Database } from "@/types/supabase";
 
@@ -18,7 +17,6 @@ type ProfileUpdate = Partial<Omit<ProfileRow, "id" | "created_at">>;
 
 const TABLE = "profiles" as const;
 
-// 📥 Obtener todos los usuarios (opcional, para vistas públicas)
 export async function fetchUsers(): Promise<ProfileRow[]> {
   const { data, error } = await supabase
     .from(TABLE)
@@ -28,18 +26,16 @@ export async function fetchUsers(): Promise<ProfileRow[]> {
   return data ?? [];
 }
 
-// 📄 Obtener perfil por ID
 export async function fetchUserById(id: string): Promise<ProfileRow | null> {
   const { data, error } = await supabase
     .from(TABLE)
     .select("id, created_at, username, email, cp, ciudad, lat, lng, avatar_url")
     .eq("id", id)
-    .maybeSingle(); // devuelve null si no existe
+    .maybeSingle();
   if (error) throw new Error(error.message);
   return data ?? null;
 }
 
-// ✏️ Actualizar perfil
 export async function updateUser(
   id: string,
   updates: ProfileUpdate
@@ -54,7 +50,6 @@ export async function updateUser(
   return data;
 }
 
-// 🧩 Crear perfil (usualmente tras signup)
 export async function createUserProfile(
   profile: ProfileInsert
 ): Promise<ProfileRow> {

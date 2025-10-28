@@ -37,11 +37,9 @@ export function NewEventButton() {
     image_url: "",
   });
 
-  // 🧹 Reset form when modal closes
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
     if (!nextOpen) {
-      // Reset form when closing
       setForm({
         title: "",
         description: "",
@@ -53,7 +51,6 @@ export function NewEventButton() {
     }
   };
 
-  // 🔹 Cargar Swap Points disponibles
   useEffect(() => {
     const loadSwapPoints = async () => {
       try {
@@ -72,12 +69,10 @@ export function NewEventButton() {
     loadSwapPoints();
   }, []);
 
-  // 📸 Maneja subida de imagen
   const handleImageUpload = (publicUrl: string) => {
     setForm((prev) => ({ ...prev, image_url: publicUrl }));
   };
 
-  // 💾 Guardar evento
   const handleCreate = async () => {
     if (!form.title || !form.date || !form.location) {
       showError("Please fill in all required fields.");
@@ -107,7 +102,7 @@ export function NewEventButton() {
       if (error) throw error;
 
       showSuccess("Event created successfully!");
-      setOpen(false); // handleOpenChange se encarga del reset
+      setOpen(false);
     } catch (err) {
       console.error("Error creating event:", err);
       showError("Could not create event.");

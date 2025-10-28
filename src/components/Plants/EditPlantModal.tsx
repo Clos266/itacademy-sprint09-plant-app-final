@@ -33,7 +33,6 @@ export function EditPlantModal({
   const handleSubmit = () => {
     if (!plant || uploading) return;
     onSave(plant.id, formData);
-    // No cerramos aquí, dejamos que el componente padre lo maneje después del éxito
   };
 
   return (
@@ -52,11 +51,8 @@ export function EditPlantModal({
       loadingText="Saving..."
       size="md"
     >
-      {/* 🖼️ Cambiar imagen */}
-
       {plant ? (
         <div className="space-y-4">
-          {/* 🧱 Grid compacto 2×2 */}
           <div className="pt-2">
             <ImageUploader
               bucket="plants"
@@ -69,7 +65,6 @@ export function EditPlantModal({
               }}
             />
           </div>
-          {/* ✅ Disponible para intercambio */}
           <div className="flex items-center gap-2 pt-1">
             <Checkbox
               id="disponible"

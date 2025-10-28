@@ -24,7 +24,6 @@ export function EditProfileModal({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // TODO: Extract to useAuth hook - authentication state management (shared with CreateProfilePage)
   const {
     form,
     saving,
@@ -81,7 +80,6 @@ export function EditProfileModal({
         const userData = await fetchUserById(data.user.id);
         if (userData) {
           setProfile(userData);
-          // Reset form with loaded profile data
           resetForm({
             username: userData.username || "",
             ciudad: userData.ciudad || "",
@@ -182,47 +180,3 @@ export function EditProfileModal({
     </ModalDialog>
   );
 }
-
-/*
-  TODO: Refactoring opportunities identified (shared with CreateProfilePage):
-  
-  1. useProfileForm hook extraction:
-     - Form state management (ProfileFormData) - shared interface with CreateProfilePage
-     - Optimized field handlers (handleUsernameChange, handleCiudadChange, handleCpChange) - identical patterns
-     - Form validation logic (currently basic, ready for Zod integration)
-     - Form submission logic (handleSave with service integration)
-     - Image upload handling (handleImageUpload)
-     
-  2. useAuth hook extraction:
-     - User authentication state management - shared logic
-     - Session validation and error handling - consistent patterns
-     - Profile loading logic - similar to CreateProfilePage user loading
-     
-  3. Shared ProfileForm component extraction:
-     - Form fields layout and structure (username, ciudad, cp) - 95% identical
-     - Loading states and disabled states management
-     - Validation feedback and error display
-     - Accessibility attributes (htmlFor, required, maxLength, placeholders)
-     
-  4. Zod schema integration ready:
-     - ProfileFormData interface can be replaced with inferred Zod type
-     - Basic validation is isolated and ready for schema replacement
-     - Error handling structure supports detailed validation messages
-     
-  5. Service layer improvements:
-     - Profile update calls can be unified with create calls
-     - Error handling is standardized for service integration
-     
-  Current improvements implemented (matching CreateProfilePage patterns):
-  - ✅ Full TypeScript typing (ProfileFormData interface)
-  - ✅ Optimized handlers with useCallback (prevents re-renders)
-  - ✅ Enhanced error handling with proper type guards
-  - ✅ Improved form UX (placeholders, disabled states, validation)
-  - ✅ Better accessibility (htmlFor, required, maxLength)
-  - ✅ Performance optimization (no inline objects or functions)
-  - ✅ Consistent validation logic (username required, smart button disable)
-  
-  Code duplication eliminated: ~80% with CreateProfilePage patterns
-  Performance improvement: ~70% fewer re-renders through memoization
-  Ready for: useProfileForm hook extraction serving both components
-*/

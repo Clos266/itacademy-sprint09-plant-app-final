@@ -13,7 +13,6 @@ export function AppLogo() {
         <title>PlantApp logo</title>
         <defs>
           <mask id="leafCutout">
-            {/* Blanco = visible | Negro = recorte */}
             <rect width="256" height="256" fill="white" />
             <g transform="translate(40,78) scale(2)">
               <path
@@ -27,7 +26,6 @@ export function AppLogo() {
           </mask>
         </defs>
 
-        {/* Círculo verde con recorte */}
         <circle
           cx="128"
           cy="128"

@@ -10,24 +10,6 @@ interface EventGridProps {
   emptyMessage?: string;
 }
 
-/**
- * 📅 EventGrid - Grid component for displaying events
- *
- * Renders a responsive grid of EventCard components with:
- * - Consistent grid layout using GRID_CONFIGS.CARDS.CONTAINER
- * - Click handlers for event selection
- * - Empty state message when no events
- * - Full responsive design
- *
- * @example
- * ```tsx
- * <EventGrid
- *   data={events}
- *   onSelect={(id) => openEventDetails(id)}
- *   emptyMessage="No events found for this filter"
- * />
- * ```
- */
 export function EventGrid({
   data,
   onSelect,

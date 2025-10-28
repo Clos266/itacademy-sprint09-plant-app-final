@@ -72,7 +72,6 @@ export function PaginatedTable<T>({
         </TableBody>
       </Table>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="mt-6">
           <Pagination>

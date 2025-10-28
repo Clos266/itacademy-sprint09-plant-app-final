@@ -12,7 +12,6 @@ export default function ProtectedRoute({ children }: Props) {
   const [session, setSession] = useState<any>(null);
   const location = useLocation();
 
-  // ✅ Rutas públicas (login y signup)
   const isPublicRoute =
     location.pathname === "/login" || location.pathname === "/signup";
 
@@ -24,7 +23,6 @@ export default function ProtectedRoute({ children }: Props) {
     };
     getSession();
 
-    // 🔁 Escucha cambios de sesión (login/logout/signup)
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
@@ -38,16 +36,12 @@ export default function ProtectedRoute({ children }: Props) {
 
   if (loading) return <LoadingState className="p-6" />;
 
-  // 🔓 Rutas públicas: login/signup
   if (isPublicRoute) {
-    // Si el usuario ya está autenticado → mándalo al home
     if (session) return <Navigate to="/" replace />;
     return <>{children}</>;
   }
 
-  // 🚪 Si no está autenticado → mándalo a login
   if (!session) return <Navigate to="/login" replace />;
 
-  // ✅ Usuario autenticado → muestra la app
   return <>{children}</>;
 }

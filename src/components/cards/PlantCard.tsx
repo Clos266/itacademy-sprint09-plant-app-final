@@ -16,23 +16,6 @@ interface PlantCardProps {
   onClick: (plant: FullPlant) => void;
 }
 
-/**
- * 🌱 PlantCard - Card específica para mostrar plantas
- *
- * Basada en BaseCard, incluye:
- * - Badge de disponibilidad (Available/Unavailable)
- * - Información de la planta (nombre común y científico)
- * - Datos del propietario (ubicación y avatar)
- * - Click handler para proponer intercambios
- *
- * @example
- * ```tsx
- * <PlantCard
- *   plant={plant}
- *   onClick={(plant) => openSwapModal(plant)}
- * />
- * ```
- */
 export function PlantCard({ plant, onClick }: PlantCardProps) {
   const owner = plant.profile;
 

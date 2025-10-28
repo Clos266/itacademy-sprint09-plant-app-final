@@ -22,7 +22,6 @@ import type { Database } from "@/types/supabase";
 type Event = Database["public"]["Tables"]["events"]["Row"];
 type SwapPoint = Database["public"]["Tables"]["swap_points"]["Row"];
 
-// Using centralized filter types and grid configurations
 const EMPTY_MESSAGES = {
   events: "No events found.",
   swappoints: "No swap points found.",

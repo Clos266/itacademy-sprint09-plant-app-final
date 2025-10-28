@@ -22,9 +22,8 @@ import { useNavigate } from "react-router-dom";
 import { signIn } from "@/services/authService";
 import { showError, showSuccess } from "@/services/toastService";
 import { supabase } from "@/services/supabaseClient";
-import { Spinner } from "@/components/ui/spinner"; // ✅ importado
+import { Spinner } from "@/components/ui/spinner";
 
-// ✅ Schema de validación
 const authSchema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(6, "Password must be at least 6 characters long"),
@@ -66,7 +65,6 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         showSuccess("Account created! Let's set up your profile 🌿");
 
-        // 👇 Forzar recarga completa para asegurar sesión válida
         setTimeout(() => {
           window.location.href = "/create-profile";
         }, 500);
@@ -173,7 +171,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           </p>
         </CardContent>
 
-        {/* 🌐 OAuth Providers */}
+        {/* OAuth Providers */}
         <div className="flex flex-col gap-2 mt-2 px-6 pb-4">
           <Button
             variant="outline"

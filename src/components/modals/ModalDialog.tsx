@@ -49,7 +49,6 @@ export function ModalDialog({
   return (
     <Dialog
       open={open}
-      // 🧩 evita que el modal se cierre mientras se guarda
       onOpenChange={(nextOpen) => {
         if (!loading) onOpenChange(nextOpen);
       }}
@@ -64,7 +63,6 @@ export function ModalDialog({
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
 
-        {/* 🌿 contenido dinámico */}
         <div className="py-4">{children}</div>
 
         {showFooter && (

@@ -51,7 +51,6 @@ export function SwapInfoModal({
   username,
   onStatusChange,
 }: SwapInfoModalProps) {
-  // Style constants for reused classes
   const avatarClass = "w-10 h-10 rounded-full object-cover mb-1";
   const plantImageClass = "object-cover w-full h-full";
   const plantContainerClass =
@@ -63,8 +62,6 @@ export function SwapInfoModal({
   const [loadingAction, setLoadingAction] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
 
-  // TODO: Extract useSwapModalLogic hook - complex state management and computed values
-  // Memoized computed values for performance - only when swap exists
   const swapInfo = useMemo(() => {
     if (!swap) return null;
     return {
@@ -72,16 +69,14 @@ export function SwapInfoModal({
       isAccepted: swap.status === "accepted",
       isPending: swap.status === "pending",
       isCompleted: swap.status === "completed",
-      canReject: swap.status !== "completed", // Can reject unless completed
+      canReject: swap.status !== "completed",
     };
   }, [swap?.receiver_id, swap?.status, userId]);
 
-  // Memoized reject handler with AlertDialog confirmation
   const handleRejectSwap = useCallback(() => {
     setShowRejectDialog(true);
   }, []);
 
-  // Memoized confirm reject handler
   const handleConfirmReject = useCallback(async () => {
     if (!swap) return;
 
@@ -100,7 +95,6 @@ export function SwapInfoModal({
     }
   }, [swap?.id, onStatusChange, onOpenChange]);
 
-  // Memoized complete swap handler
   const handleMarkAsCompleted = useCallback(async () => {
     if (!swap) return;
 
@@ -118,7 +112,6 @@ export function SwapInfoModal({
     }
   }, [swap?.id, userId, onStatusChange, onOpenChange]);
 
-  // Custom footer with conditional swap actions
   const customFooter = swap && swapInfo && (
     <div className="flex justify-end gap-2">
       {swapInfo.isAccepted && (
@@ -153,7 +146,6 @@ export function SwapInfoModal({
         size="xl"
       >
         <ScrollArea className="max-h-[70vh]">
-          {/* Status badge */}
           {swap && (
             <div className="flex justify-center mb-4">
               <Badge
@@ -170,7 +162,6 @@ export function SwapInfoModal({
             </div>
           )}
 
-          {/* TODO: Extract LoadingState component - reusable spinner + message pattern */}
           {!swap ? (
             <div className="flex flex-col justify-center items-center py-8 text-center">
               <Spinner className="w-8 h-8 mb-4" />

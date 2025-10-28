@@ -51,7 +51,6 @@ export function ProfileModal({
         <LoadingState className="p-6" />
       ) : user ? (
         <div className="flex flex-col items-center space-y-4">
-          {/* 👤 Avatar and uploader */}
           <div className="flex flex-col items-center mb-5">
             <Avatar className="w-24 h-24 mb-3">
               <AvatarImage
@@ -63,7 +62,6 @@ export function ProfileModal({
               </AvatarFallback>
             </Avatar>
 
-            {/* 🔹 Reusable image uploader */}
             <ImageUploader
               bucket="avatars"
               pathPrefix={user.id}
@@ -73,7 +71,6 @@ export function ProfileModal({
             />
           </div>
 
-          {/* 📍 Location */}
           <div className="flex justify-center items-center gap-2 text-sm text-muted-foreground mb-6">
             <MapPin className="w-4 h-4" />
             <span>{user.ciudad || "Unknown location"}</span>
@@ -86,7 +83,6 @@ export function ProfileModal({
         </div>
       )}
 
-      {/* Custom footer */}
       {customFooter}
     </ModalDialog>
   );

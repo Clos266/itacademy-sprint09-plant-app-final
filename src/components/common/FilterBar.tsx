@@ -8,25 +8,16 @@ import type {
   EnhancedFilterBarProps,
 } from "@/types/filtering";
 
-// 🔍 Original simple FilterBar (backward compatibility)
 interface FilterBarProps {
-  /** Componente de búsqueda, como <SearchInput /> */
   searchComponent?: React.ReactNode;
-  /** Filtros adicionales (botones, selects, etc.) */
   filters?: React.ReactNode;
 }
 
-/**
- * 🔍 Basic FilterBar - maintains backward compatibility
- * Compatible with existing usage across pages.
- */
 export function FilterBar({ searchComponent, filters }: FilterBarProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4">
-      {/* Campo de búsqueda o espacio vacío */}
       <div className="w-full md:w-1/2">{searchComponent}</div>
 
-      {/* Controles de filtro (botones, selects, etc.) */}
       <div className="flex gap-2 md:w-auto flex-wrap justify-end">
         {filters}
       </div>
@@ -34,22 +25,6 @@ export function FilterBar({ searchComponent, filters }: FilterBarProps) {
   );
 }
 
-/**
- * 🎛️ Enhanced config-based FilterBar for unified filtering system
- *
- * Supports declarative filter configuration with automatic UI generation.
- * Handles text search, status filters, multi-status toggles, and custom filters.
- *
- * @example
- * <EnhancedFilterBar
- *   config={[
- *     { key: "search", type: "text", placeholder: "Search plants..." },
- *     { key: "status", type: "status", options: ["all", "available", "unavailable"] }
- *   ]}
- *   values={{ search: "", status: "all" }}
- *   onChange={(key, value) => updateFilter(key, value)}
- * />
- */
 export function EnhancedFilterBar({
   config,
   values,
@@ -61,7 +36,6 @@ export function EnhancedFilterBar({
   className,
   disabled = false,
 }: EnhancedFilterBarProps) {
-  // Helper to render individual filter based on config
   const renderFilter = (filterConfig: FilterConfig) => {
     const {
       key,
@@ -119,11 +93,9 @@ export function EnhancedFilterBar({
     }
   };
 
-  // Separate search filters from other filters
   const searchFilters = config.filter((f) => f.type === "text");
   const otherFilters = config.filter((f) => f.type !== "text");
 
-  // Check if any filters are active for reset button
   const hasActiveFilters = Object.entries(values).some(([key, value]) => {
     if (key === "search") return Boolean(value);
     if (Array.isArray(value)) return value.length > 0;
@@ -137,17 +109,13 @@ export function EnhancedFilterBar({
         className
       )}
     >
-      {/* Search section */}
       <div className="w-full md:w-1/2 flex flex-col gap-2">
         {searchFilters.map(renderFilter)}
       </div>
 
-      {/* Filter controls section */}
       <div className="flex gap-2 md:w-auto flex-wrap justify-end items-center">
-        {/* Render non-search filters */}
         {otherFilters.map(renderFilter)}
 
-        {/* Reset button */}
         {showReset && hasActiveFilters && onReset && (
           <Button
             variant="outline"
@@ -160,7 +128,6 @@ export function EnhancedFilterBar({
           </Button>
         )}
 
-        {/* Additional actions (New Plant, New Event, etc.) */}
         {actions}
       </div>
     </div>

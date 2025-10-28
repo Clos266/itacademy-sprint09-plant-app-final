@@ -124,7 +124,6 @@ export default function MyPlantsPage() {
   const handleDelete = useCallback(async (id: number) => {
     try {
       await deletePlant(id);
-      // NOTE: Realtime subscription handles state update automatically
       showWarning("Plant deleted!");
     } catch (err: unknown) {
       const errorMessage =

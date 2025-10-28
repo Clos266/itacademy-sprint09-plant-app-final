@@ -4,29 +4,6 @@ import { cn } from "@/lib/utils";
 import { FILTER_DISPLAY_CONFIG } from "@/constants/filters";
 import type { FilterButtonsProps } from "@/types/filtering";
 
-/**
- * 🔘 Reusable filter button group component
- *
- * Extracted from repetitive button patterns across Home, Plants, Events, and Swaps pages.
- * Supports both single-select (buttons) and multi-select (toggles) modes.
- *
- * @example
- * // Single-select filter buttons (like availability filters)
- * <FilterButtons
- *   options={["all", "available", "unavailable"]}
- *   value="available"
- *   onChange={(value) => setFilter(value)}
- * />
- *
- * @example
- * // Multi-select toggle buttons (like swap status filters)
- * <FilterButtons
- *   options={["new", "accepted", "declined", "completed"]}
- *   value={["new", "accepted"]}
- *   onChange={(value) => setStatuses(value)}
- *   multiple
- * />
- */
 export function FilterButtons({
   options,
   value,
@@ -36,17 +13,14 @@ export function FilterButtons({
   className,
   disabled = false,
 }: FilterButtonsProps) {
-  // Helper to capitalize first letter for display
   const capitalize = (str: string) =>
     str.charAt(0).toUpperCase() + str.slice(1);
 
-  // Handle single-select button clicks
   const handleSingleSelect = (option: string) => {
     if (disabled) return;
     onChange(option);
   };
 
-  // Handle multi-select toggle changes
   const handleMultiSelect = (option: string) => {
     if (disabled) return;
 
@@ -58,7 +32,6 @@ export function FilterButtons({
     onChange(newValues);
   };
 
-  // Render single-select buttons
   if (!multiple) {
     return (
       <div className={cn("flex gap-2 flex-wrap", className)}>
@@ -89,7 +62,6 @@ export function FilterButtons({
     );
   }
 
-  // Render multi-select toggles
   const activeValues = Array.isArray(value) ? value : [];
 
   return (
@@ -119,27 +91,17 @@ export function FilterButtons({
   );
 }
 
-// 🎨 Preset configurations for common filter types
 export const FilterButtonPresets = {
-  /**
-   * Plant availability filters (all/available/unavailable)
-   */
   availability: {
     options: ["all", "available", "unavailable"] as const,
     multiple: false,
   },
 
-  /**
-   * Event date filters (all/upcoming/past)
-   */
   eventDate: {
     options: ["all", "upcoming", "past"] as const,
     multiple: false,
   },
 
-  /**
-   * Swap status filters (new/accepted/declined/completed)
-   */
   swapStatus: {
     options: ["new", "accepted", "declined", "completed"] as const,
     multiple: true,

@@ -7,44 +7,10 @@ import type {
 } from "@/types/filtering";
 import { DEFAULT_FILTER_VALUES } from "@/constants/filters";
 
-/**
- * 🎣 Universal filtering hook for consistent filtering logic across pages
- *
- * Provides a unified interface for text search, status filtering, sorting,
- * and custom filter functions. Handles pagination reset automatically and
- * optimizes performance with memoization.
- *
- * @example
- * // Basic plant filtering (Home, Plants pages)
- * const { filteredItems, filters, updateFilter } = useFiltering(plants, {
- *   searchFields: ["nombre_comun", "nombre_cientifico", "especie"],
- *   statusField: "disponible",
- *   customFilters: {
- *     availability: (plant, value) => {
- *       if (value === "available") return plant.disponible;
- *       if (value === "unavailable") return !plant.disponible;
- *       return true; // "all"
- *     }
- *   }
- * });
- *
- * @example
- * // Advanced swap filtering with multi-status
- * const { filteredItems, toggleStatus } = useFiltering(swaps, {
- *   searchFields: ["receiver.username", "senderPlant.nombre_comun"],
- *   customFilters: {
- *     multiStatus: (swap, statusArray) => {
- *       if (statusArray.length === 0) return true;
- *       return statusArray.includes(mapSwapStatus(swap.status));
- *     }
- *   }
- * });
- */
 export function useFiltering<T extends Record<string, any>>(
   items: T[],
   config: FilteringConfig<T> = {}
 ): UseFilteringReturn<T> {
-  // Initialize filter state with defaults
   const [filters, setFilters] = useState<FilterState>({
     search: DEFAULT_FILTER_VALUES.search,
     status: DEFAULT_FILTER_VALUES.availability,
@@ -59,7 +25,6 @@ export function useFiltering<T extends Record<string, any>>(
     custom: {},
   });
 
-  // Generic text search across multiple fields
   const applyTextSearch = useCallback(
     (items: T[], query: string): T[] => {
       if (!query.trim() || !config.searchFields?.length) return items;
@@ -68,7 +33,6 @@ export function useFiltering<T extends Record<string, any>>(
 
       return items.filter((item) => {
         return config.searchFields!.some((field) => {
-          // Handle nested field access (e.g., "receiver.username")
           const value = getNestedValue(item, field as string);
           return String(value || "")
             .toLowerCase()
@@ -79,7 +43,6 @@ export function useFiltering<T extends Record<string, any>>(
     [config.searchFields]
   );
 
-  // Apply status-based filtering
   const applyStatusFilter = useCallback(
     (items: T[], status: string): T[] => {
       if (!status || status === "all" || !config.statusField) return items;
@@ -92,7 +55,6 @@ export function useFiltering<T extends Record<string, any>>(
     [config.statusField]
   );
 
-  // Apply date-based filtering (for events)
   const applyDateFilter = useCallback(
     (items: T[], dateFilter: string): T[] => {
       if (!dateFilter || dateFilter === "all" || !config.dateField)
@@ -112,7 +74,6 @@ export function useFiltering<T extends Record<string, any>>(
     [config.dateField]
   );
 
-  // Apply custom filters
   const applyCustomFilters = useCallback(
     (items: T[], customValues: Record<string, any>): T[] => {
       if (!config.customFilters || Object.keys(customValues).length === 0)
@@ -129,7 +90,6 @@ export function useFiltering<T extends Record<string, any>>(
     [config.customFilters]
   );
 
-  // Apply sorting
   const applySorting = useCallback(
     (items: T[], sortField: string, sortDirection: SortDirection): T[] => {
       if (!sortField) return items;
@@ -138,7 +98,6 @@ export function useFiltering<T extends Record<string, any>>(
         const aValue = getNestedValue(a, sortField);
         const bValue = getNestedValue(b, sortField);
 
-        // Handle different data types
         if (typeof aValue === "string" && typeof bValue === "string") {
           const result = aValue.localeCompare(bValue);
           return sortDirection === "asc" ? result : -result;
@@ -148,7 +107,6 @@ export function useFiltering<T extends Record<string, any>>(
           return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
         }
 
-        // Handle dates
         if (
           aValue instanceof Date ||
           bValue instanceof Date ||
@@ -169,17 +127,14 @@ export function useFiltering<T extends Record<string, any>>(
     []
   );
 
-  // Main filtering logic with memoization for performance
   const filteredItems = useMemo(() => {
     let result = items;
 
-    // Apply filters in sequence
     result = applyTextSearch(result, filters.search);
     result = applyStatusFilter(result, filters.status);
     result = applyDateFilter(result, filters.date);
     result = applyCustomFilters(result, filters.custom);
 
-    // Apply sorting last
     result = applySorting(result, filters.sort.field, filters.sort.direction);
 
     return result;
@@ -197,7 +152,6 @@ export function useFiltering<T extends Record<string, any>>(
     applySorting,
   ]);
 
-  // Update individual filter
   const updateFilter = useCallback((key: keyof FilterState, value: any) => {
     setFilters((prev) => ({
       ...prev,
@@ -205,7 +159,6 @@ export function useFiltering<T extends Record<string, any>>(
     }));
   }, []);
 
-  // Reset all filters to defaults
   const resetFilters = useCallback(() => {
     setFilters({
       search: DEFAULT_FILTER_VALUES.search,
@@ -222,12 +175,10 @@ export function useFiltering<T extends Record<string, any>>(
     });
   }, [config.defaultSort]);
 
-  // Clear search specifically
   const clearSearch = useCallback(() => {
     updateFilter("search", "");
   }, [updateFilter]);
 
-  // Toggle status in multi-status array
   const toggleStatus = useCallback((status: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -237,7 +188,6 @@ export function useFiltering<T extends Record<string, any>>(
     }));
   }, []);
 
-  // Update sort configuration
   const updateSort = useCallback((field: string, direction?: SortDirection) => {
     setFilters((prev) => ({
       ...prev,
@@ -254,7 +204,6 @@ export function useFiltering<T extends Record<string, any>>(
     }));
   }, []);
 
-  // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
     return (
       filters.search !== "" ||
@@ -265,7 +214,6 @@ export function useFiltering<T extends Record<string, any>>(
     );
   }, [filters]);
 
-  // Count active filters
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.search) count++;
@@ -289,18 +237,12 @@ export function useFiltering<T extends Record<string, any>>(
   };
 }
 
-/**
- * 🔍 Helper function to get nested object values
- * Supports dot notation like "receiver.username" or "plant.nombre_comun"
- */
 function getNestedValue(obj: any, path: string): any {
   return path.split(".").reduce((current, key) => {
     return current && current[key] !== undefined ? current[key] : undefined;
   }, obj);
 }
 
-// 🎯 Re-export centralized filtering presets for backward compatibility
-// The actual presets are now defined in @/config/filteringPresets.ts
 export { FilteringPresets } from "@/config/filteringPresets";
 export type {
   FilteringPresetName,

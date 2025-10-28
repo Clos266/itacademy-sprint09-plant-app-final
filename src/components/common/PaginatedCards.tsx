@@ -13,7 +13,7 @@ interface PaginatedCardsProps<T> {
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  itemsPerRow?: number; // opcional, por si quieres controlar columnas
+  itemsPerRow?: number;
   emptyMessage?: string;
 }
 

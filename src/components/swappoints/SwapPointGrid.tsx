@@ -10,24 +10,6 @@ interface SwapPointGridProps {
   emptyMessage?: string;
 }
 
-/**
- * 📍 SwapPointGrid - Grid component for displaying swap points
- *
- * Renders a responsive grid of SwapPointCard components with:
- * - Consistent grid layout using GRID_CONFIGS.CARDS.CONTAINER
- * - Click handlers for swap point selection
- * - Empty state message when no swap points
- * - Full responsive design
- *
- * @example
- * ```tsx
- * <SwapPointGrid
- *   data={swapPoints}
- *   onSelect={(id) => openSwapPointDetails(id)}
- *   emptyMessage="No swap points found in this area"
- * />
- * ```
- */
 export function SwapPointGrid({
   data,
   onSelect,
