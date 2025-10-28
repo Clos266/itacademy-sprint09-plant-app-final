@@ -50,6 +50,7 @@ export async function updateUser(
   return data;
 }
 
+// 🧩 Crear perfil (usualmente tras signup)
 export async function createUserProfile(
   profile: ProfileInsert
 ): Promise<ProfileRow> {

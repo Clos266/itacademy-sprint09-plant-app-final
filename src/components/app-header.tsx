@@ -1,5 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { Menu } from "lucide-react";
 import { mainMenu } from "@/config/menu";
 import { cn } from "@/lib/utils";
 import {
@@ -11,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AppLogo } from "./app-logo";
-import { AppSidebar } from "./app-sidebar";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { supabase } from "@/services/supabaseClient";
@@ -80,7 +80,29 @@ export function AppHeader() {
     <header className="bg-background sticky top-0 z-50 border-b">
       <div className="w-full max-w-7xl mx-auto flex items-center gap-2 h-14 px-4 md:px-8">
         <div className="flex items-center gap-2 md:gap-0">
-          <AppSidebar />
+          {/* 🍔 Mobile Menu Hamburger */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7 md:hidden">
+                <Menu className="h-4 w-4" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              {mainMenu.map((item, index) => (
+                <DropdownMenuItem key={index} asChild>
+                  <Link
+                    to={item.url}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    {item.icon && <item.icon className="h-4 w-4" />}
+                    <span>{item.title}</span>
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Link to="/">
             <AppLogo />
           </Link>
