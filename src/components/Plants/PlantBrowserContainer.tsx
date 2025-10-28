@@ -5,6 +5,8 @@ import { ProposeSwapModal } from "@/components/swaps/ProposeSwapModal";
 import { PlantCard } from "@/components/cards";
 import { LoadingState } from "@/components/common/LoadingState";
 import { PaginatedCards } from "@/components/common/PaginatedCards";
+import { PageHeader, PageHeaderHeading } from "@/components/page-header";
+import { Leaf } from "lucide-react";
 import {
   PlantBrowserService,
   type FullPlant,
@@ -17,6 +19,7 @@ import { FilteringPresets } from "@/config/filteringPresets";
 import { SEARCH_PLACEHOLDERS } from "@/constants/filters";
 import { PAGINATION_SIZES } from "@/constants/pagination";
 import { DOMAIN_FILTER_TYPES } from "@/constants/filterTypes";
+import { SPACING } from "@/constants/layouts";
 import type { FilterConfig } from "@/types/filtering";
 
 const PLANT_FILTER_CONFIG: FilterConfig[] = [
@@ -138,7 +141,13 @@ export function PlantBrowserContainer({
 
   if (loading) {
     return (
-      <div className={className}>
+      <div className={`min-h-screen ${SPACING.PAGE.SECTION_GAP} ${className}`}>
+        <PageHeader>
+          <PageHeaderHeading>
+            <Leaf className="inline-block w-6 h-6 mr-2 text-primary" />
+            Browse Plants for Swap
+          </PageHeaderHeading>
+        </PageHeader>
         <LoadingState className="h-[70vh]" />
       </div>
     );
@@ -147,7 +156,14 @@ export function PlantBrowserContainer({
   const availableUserPlants = userPlants.filter((p) => p.disponible);
 
   return (
-    <div className={className}>
+    <div className={`min-h-screen ${SPACING.PAGE.SECTION_GAP} ${className}`}>
+      <PageHeader>
+        <PageHeaderHeading>
+          <Leaf className="inline-block w-6 h-6 mr-2 text-primary" />
+          Browse Plants for Swap
+        </PageHeaderHeading>
+      </PageHeader>
+
       <Card>
         <CardContent>
           <EnhancedFilterBar

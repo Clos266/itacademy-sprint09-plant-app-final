@@ -3,10 +3,6 @@ import type { Database } from "@/types/supabase";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { showError, showSuccess } from "@/services/toastService";
 
-// ============================================================================
-// Types & Interfaces
-// ============================================================================
-
 export type Swap = Database["public"]["Tables"]["swaps"]["Row"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Plant = Database["public"]["Tables"]["plants"]["Row"];
@@ -19,7 +15,6 @@ export type SwapInsert = Omit<
 
 export type SwapUpdate = Partial<Swap>;
 
-// Enhanced swap type with relations (used in Swaps.tsx)
 export interface FullSwap extends Swap {
   sender: Profile | null;
   receiver: Profile | null;
@@ -27,7 +22,6 @@ export interface FullSwap extends Swap {
   receiverPlant: Plant | null;
 }
 
-// Centralized swap action parameters
 export interface SwapActionParams {
   swapId: number;
   senderPlantId?: number;
@@ -45,10 +39,6 @@ export interface SwapProposalParams {
   initialMessage?: string;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
 const TABLES = {
   SWAPS: "swaps",
   MESSAGES: "swap_messages",
@@ -57,7 +47,6 @@ const TABLES = {
   PROFILES: "profiles",
 } as const;
 
-// Status mappings for consistency
 export const SWAP_STATUS_MAPPINGS = {
   PENDING: "pending",
   ACCEPTED: "accepted",
@@ -65,14 +54,6 @@ export const SWAP_STATUS_MAPPINGS = {
   COMPLETED: "completed",
 } as const;
 
-// ============================================================================
-// Core Data Operations
-// ============================================================================
-
-/**
- * Fetch swaps with all relations for a specific user
- * Used by useSwaps hook and Swaps page
- */
 export async function fetchSwapsWithRelations(
   userId?: string
 ): Promise<FullSwap[]> {
@@ -114,10 +95,6 @@ export async function fetchSwapsWithRelations(
   }
 }
 
-/**
- * Create a new swap proposal with optional initial message
- * Enhanced with better error handling and validation
- */
 export async function addSwapProposal(
   params: SwapProposalParams
 ): Promise<Swap> {
@@ -132,7 +109,6 @@ export async function addSwapProposal(
       initialMessage,
     } = params;
 
-    // Validate required parameters
     if (!sender_id || !receiver_id || !sender_plant_id || !receiver_plant_id) {
       throw new Error("Missing required swap proposal parameters");
     }
@@ -156,7 +132,6 @@ export async function addSwapProposal(
       throw new Error(`Swap proposal failed: ${error.message}`);
     }
 
-    // Add initial message if provided
     if (initialMessage?.trim()) {
       try {
         await supabase.from(TABLES.MESSAGES).insert({
@@ -180,14 +155,6 @@ export async function addSwapProposal(
   }
 }
 
-// ============================================================================
-// Centralized Swap Actions (used by Swaps.tsx)
-// ============================================================================
-
-/**
- * Accept a swap proposal with plant availability management
- * Used by handleAcceptSwap in Swaps.tsx
- */
 export async function acceptSwapProposal(
   params: SwapActionParams
 ): Promise<Swap> {
@@ -205,7 +172,6 @@ export async function acceptSwapProposal(
       throw new Error("Failed to update swap status with plant availability");
     }
 
-    // Fetch updated swap data
     const { data, error } = await supabase
       .from(TABLES.SWAPS)
       .select("*")
@@ -223,10 +189,6 @@ export async function acceptSwapProposal(
   }
 }
 
-/**
- * Decline a swap proposal with plant availability management
- * Used by handleDeclineSwap in Swaps.tsx
- */
 export async function declineSwapProposal(
   params: SwapActionParams
 ): Promise<Swap> {
@@ -244,7 +206,6 @@ export async function declineSwapProposal(
       throw new Error("Failed to update swap status with plant availability");
     }
 
-    // Fetch updated swap data
     const { data, error } = await supabase
       .from(TABLES.SWAPS)
       .select("*")
@@ -262,9 +223,6 @@ export async function declineSwapProposal(
   }
 }
 
-/**
- * Complete a swap with ownership transfer
- */
 export async function completeSwapProposal(
   params: SwapActionParams
 ): Promise<Swap> {
@@ -299,9 +257,6 @@ export async function completeSwapProposal(
   }
 }
 
-/**
- * Cancel/delete a swap proposal
- */
 export async function cancelSwapProposal(swapId: number): Promise<void> {
   try {
     const { error } = await supabase
@@ -319,31 +274,6 @@ export async function cancelSwapProposal(swapId: number): Promise<void> {
   }
 }
 
-// ============================================================================
-// Legacy Functions (deprecated - use centralized actions above)
-// ============================================================================
-
-/** @deprecated Use acceptSwapProposal instead */
-export const acceptSwap = (id: number) => acceptSwapProposal({ swapId: id });
-
-/** @deprecated Use declineSwapProposal instead */
-export const rejectSwap = (id: number) => declineSwapProposal({ swapId: id });
-
-/** @deprecated Use completeSwapProposal instead */
-export const completeSwap = (id: number) =>
-  completeSwapProposal({ swapId: id });
-
-/** @deprecated Use cancelSwapProposal instead */
-export const deleteSwap = (id: number) => cancelSwapProposal(id);
-
-// ============================================================================
-// Real-time Subscriptions
-// ============================================================================
-
-/**
- * Subscribe to real-time changes for user's swaps
- * Used by useSwaps hook for live updates
- */
 export function subscribeToUserSwaps(
   userId: string,
   onChange: (payload: RealtimePostgresChangesPayload<Swap>) => void
@@ -370,14 +300,6 @@ export function subscribeToUserSwaps(
   return () => supabase.removeChannel(channel);
 }
 
-// ============================================================================
-// Swap Points Operations
-// ============================================================================
-
-/**
- * Fetch all swap points with error handling
- * Used by Events page and swap point management
- */
 export async function fetchSwapPoints(): Promise<SwapPoint[]> {
   try {
     const { data, error } = await supabase
@@ -396,14 +318,7 @@ export async function fetchSwapPoints(): Promise<SwapPoint[]> {
     throw error;
   }
 }
-// ============================================================================
-// Plant Availability Management
-// ============================================================================
 
-/**
- * Update swap status with automatic plant availability management
- * Centralized logic for status changes and plant availability
- */
 export async function updateSwapStatusWithAvailability(
   swapId: number,
   status: "accepted" | "rejected" | "pending" | "completed",
@@ -466,14 +381,6 @@ export async function updateSwapStatusWithAvailability(
   }
 }
 
-// ============================================================================
-// Advanced Swap Operations
-// ============================================================================
-
-/**
- * Mark swap as completed by individual user (for bilateral completion)
- * Handles plant ownership transfer when both users confirm completion
- */
 export async function markSwapAsCompletedByUser(
   swapId: number,
   userId: string
@@ -589,4 +496,27 @@ export async function markSwapAsCompletedByUser(
     showError("Failed to mark swap as completed");
     throw error;
   }
+}
+
+export function canUserActOnSwap(
+  swap: FullSwap,
+  userId: string
+): {
+  canAccept: boolean;
+  canDecline: boolean;
+  canView: boolean;
+  isReceiver: boolean;
+  isSender: boolean;
+} {
+  const isSender = swap.sender_id === userId;
+  const isReceiver = swap.receiver_id === userId;
+  const isNewSwap = swap.status === SWAP_STATUS_MAPPINGS.PENDING;
+
+  return {
+    canAccept: isReceiver && isNewSwap,
+    canDecline: isReceiver && isNewSwap,
+    canView: isSender || isReceiver,
+    isReceiver,
+    isSender,
+  };
 }

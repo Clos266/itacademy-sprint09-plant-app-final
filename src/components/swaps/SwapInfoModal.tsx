@@ -19,7 +19,7 @@ import type { Database } from "@/types/supabase";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   markSwapAsCompletedByUser,
-  rejectSwap,
+  declineSwapProposal,
 } from "@/services/swapCrudService";
 import { ModalDialog } from "@/components/modals/ModalDialog";
 
@@ -84,7 +84,11 @@ export function SwapInfoModal({
       setLoadingAction(true);
       setShowRejectDialog(false);
 
-      await rejectSwap(swap.id);
+      await declineSwapProposal({
+        swapId: swap.id,
+        senderPlantId: swap.senderPlant?.id,
+        receiverPlantId: swap.receiverPlant?.id,
+      });
       onStatusChange?.();
       onOpenChange(false);
     } catch (err) {
