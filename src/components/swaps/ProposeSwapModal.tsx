@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { ModalDialog } from "@/components/modals/ModalDialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -10,14 +10,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingState } from "@/components/common/LoadingState";
-import { showError, showSuccess } from "@/services/toastService";
-import { addSwapProposal } from "@/services/swapCrudService";
-import { getCurrentUser } from "@/services/authService";
-import { fetchSwapPoints } from "@/services/swapPointsCrudService";
+import { useSwapProposalForm } from "@/hooks/useSwapProposalForm";
+import { useSwapPoints } from "@/hooks/useSwapPoints";
+import { useSwapProposalSubmission } from "@/hooks/useSwapProposalSubmission";
 import type { Database } from "@/types/supabase";
 
 type Plant = Database["public"]["Tables"]["plants"]["Row"];
-type SwapPoint = Database["public"]["Tables"]["swap_points"]["Row"];
 
 interface ProposeSwapModalProps {
   open: boolean;
@@ -32,18 +30,18 @@ export function ProposeSwapModal({
   targetPlant,
   userPlants,
 }: ProposeSwapModalProps) {
-  const [offeredPlantId, setOfferedPlantId] = useState<number | null>(null);
-  const [swapPointId, setSwapPointId] = useState<number | null>(null);
-  const [swapPoints, setSwapPoints] = useState<SwapPoint[]>([]);
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [loadingPoints, setLoadingPoints] = useState(true);
+  const {
+    formData,
+    isValid,
+    resetForm,
+    handlePlantChange,
+    handleSwapPointChange,
+    handleMessageChange,
+  } = useSwapProposalForm({ targetPlant });
 
-  const resetForm = useCallback(() => {
-    setOfferedPlantId(null);
-    setSwapPointId(null);
-    setMessage("");
-  }, []);
+  const { swapPoints, loading: loadingPoints } = useSwapPoints();
+
+  const { submitting, submitProposal } = useSwapProposalSubmission();
 
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
@@ -55,86 +53,20 @@ export function ProposeSwapModal({
     [onOpenChange, resetForm]
   );
 
-  const isFormValid = useMemo(() => {
-    return !!(targetPlant && offeredPlantId && message.trim().length >= 5);
-  }, [targetPlant, offeredPlantId, message]);
-
-  useEffect(() => {
-    if (open) {
-      const loadPoints = async () => {
-        setLoadingPoints(true);
-        const points = await fetchSwapPoints();
-        setSwapPoints(points);
-        setLoadingPoints(false);
-      };
-      loadPoints();
-    }
-  }, [open]);
-
   const handleSubmit = useCallback(async () => {
-    if (!isFormValid) {
-      showError(
-        "Please fill in all required fields (plant selection and message with at least 5 characters)."
-      );
+    if (!isValid || !targetPlant) {
       return;
     }
 
-    try {
-      setLoading(true);
-      const user = await getCurrentUser();
-      if (!user) throw new Error("No active session");
+    await submitProposal({
+      offeredPlantId: formData.offeredPlantId!,
+      targetPlant,
+      swapPointId: formData.swapPointId,
+      message: formData.message,
+    });
 
-      await addSwapProposal({
-        sender_id: user.id,
-        receiver_id: targetPlant!.user_id!,
-        sender_plant_id: offeredPlantId!,
-        receiver_plant_id: targetPlant!.id,
-        swap_point_id: swapPointId ?? null,
-        status: "pending",
-        initialMessage: message,
-      });
-
-      showSuccess("Swap proposal sent!");
-      onOpenChange(false);
-    } catch (err: any) {
-      console.error("Error sending proposal:", err);
-
-      let errorMessage = "Failed to send proposal";
-      if (err?.message?.includes("auth")) {
-        errorMessage = "Authentication error. Please log in again.";
-      } else if (err?.message?.includes("network")) {
-        errorMessage = "Network error. Please check your connection.";
-      } else if (err?.message) {
-        errorMessage = err.message;
-      }
-
-      showError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    isFormValid,
-    targetPlant,
-    offeredPlantId,
-    message,
-    swapPointId,
-    resetForm,
-  ]);
-
-  const handlePlantChange = useCallback((value: string) => {
-    setOfferedPlantId(Number(value));
-  }, []);
-
-  const handleSwapPointChange = useCallback((value: string) => {
-    setSwapPointId(Number(value));
-  }, []);
-
-  const handleMessageChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setMessage(e.target.value);
-    },
-    []
-  );
+    onOpenChange(false);
+  }, [isValid, targetPlant, formData, submitProposal, onOpenChange]);
 
   return (
     <ModalDialog
@@ -146,9 +78,9 @@ export function ProposeSwapModal({
           ? `Offer one of your plants in exchange for "${targetPlant.nombre_comun}".`
           : "Select a plant to propose an exchange."
       }
-      onConfirm={isFormValid ? handleSubmit : undefined}
+      onConfirm={isValid ? handleSubmit : undefined}
       confirmLabel="Send Proposal"
-      loading={loading}
+      loading={submitting}
       loadingText="Sending..."
       size="md"
     >
@@ -163,8 +95,10 @@ export function ProposeSwapModal({
             <Label>Your plant to offer</Label>
             <Select
               onValueChange={handlePlantChange}
-              value={offeredPlantId ? String(offeredPlantId) : ""}
-              disabled={loading}
+              value={
+                formData.offeredPlantId ? String(formData.offeredPlantId) : ""
+              }
+              disabled={submitting}
             >
               <SelectTrigger className="w-full mt-1">
                 <SelectValue placeholder="Select one of your plants..." />
@@ -192,8 +126,8 @@ export function ProposeSwapModal({
             ) : (
               <Select
                 onValueChange={handleSwapPointChange}
-                value={swapPointId ? String(swapPointId) : ""}
-                disabled={loading}
+                value={formData.swapPointId ? String(formData.swapPointId) : ""}
+                disabled={submitting}
               >
                 <SelectTrigger className="w-full mt-1">
                   <SelectValue placeholder="Choose a meeting point..." />
@@ -219,10 +153,10 @@ export function ProposeSwapModal({
             <Label>Message </Label>
             <Textarea
               placeholder="Add a short note to the owner (minimum 5 characters)..."
-              value={message}
+              value={formData.message}
               onChange={handleMessageChange}
               className="mt-1"
-              disabled={loading}
+              disabled={submitting}
             />
           </div>
         </div>
