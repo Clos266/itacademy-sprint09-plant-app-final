@@ -60,9 +60,8 @@ export function MyPlantsContainer({ className = "" }: MyPlantsContainerProps) {
     <div className={`${SPACING.PAGE.SECTION_GAP} ${className}`}>
       <PageHeader>
         <div className="flex items-center justify-between w-full">
-          <div>
-            <PageHeaderHeading>My Plants</PageHeaderHeading>
-          </div>
+          <PageHeaderHeading>My Plants</PageHeaderHeading>
+          <NewPlantButton />
         </div>
       </PageHeader>
 
@@ -70,7 +69,7 @@ export function MyPlantsContainer({ className = "" }: MyPlantsContainerProps) {
         <CardContent>
           <FilterBar
             searchComponent={
-              <div className="w-full md:w-80">
+              <div className="w-full md:w-120">
                 <SearchInput
                   value={search}
                   onChange={setSearch}
@@ -92,10 +91,6 @@ export function MyPlantsContainer({ className = "" }: MyPlantsContainerProps) {
                     {type === "all" ? "All Plants" : type}
                   </Button>
                 ))}
-
-                <div className="ml-auto">
-                  <NewPlantButton />
-                </div>
               </div>
             }
           />
