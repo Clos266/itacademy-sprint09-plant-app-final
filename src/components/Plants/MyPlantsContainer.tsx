@@ -19,7 +19,7 @@ interface MyPlantsContainerProps {
 export function MyPlantsContainer({ className = "" }: MyPlantsContainerProps) {
   const {
     filteredPlants,
-    stats,
+
     loading,
     error,
     selectedPlant,
@@ -62,31 +62,7 @@ export function MyPlantsContainer({ className = "" }: MyPlantsContainerProps) {
         <div className="flex items-center justify-between w-full">
           <div>
             <PageHeaderHeading>My Plants</PageHeaderHeading>
-            {stats.total > 0 && (
-              <p className="text-muted-foreground mt-2">
-                {stats.total} plant{stats.total !== 1 ? "s" : ""} •{" "}
-                {stats.available} available • {stats.completionRate}% complete
-                profiles
-              </p>
-            )}
           </div>
-
-          {stats.total > 0 && (
-            <div className="hidden md:flex items-center gap-3">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {stats.available}
-                </div>
-                <div className="text-xs text-muted-foreground">Available</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {stats.total}
-                </div>
-                <div className="text-xs text-muted-foreground">Total</div>
-              </div>
-            </div>
-          )}
         </div>
       </PageHeader>
 
@@ -126,7 +102,7 @@ export function MyPlantsContainer({ className = "" }: MyPlantsContainerProps) {
         </CardContent>
       </Card>
 
-      {filteredPlants.length === 0 && stats.total === 0 && (
+      {filteredPlants.length === 0 && (
         <Card>
           <CardContent className="py-12">
             <div className="text-center space-y-4">
@@ -146,7 +122,7 @@ export function MyPlantsContainer({ className = "" }: MyPlantsContainerProps) {
         </Card>
       )}
 
-      {filteredPlants.length === 0 && stats.total > 0 && (
+      {filteredPlants.length === 0 && (
         <Card>
           <CardContent className="py-12">
             <div className="text-center space-y-4">
