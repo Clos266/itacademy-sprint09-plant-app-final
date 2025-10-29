@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { EnhancedFilterBar } from "@/components/common/FilterBar";
 import { ProposeSwapModal } from "@/components/swaps/ProposeSwapModal";
@@ -7,20 +6,12 @@ import { LoadingState } from "@/components/common/LoadingState";
 import { PaginatedCards } from "@/components/common/PaginatedCards";
 import { PageHeader, PageHeaderHeading } from "@/components/page-header";
 import { Leaf } from "lucide-react";
-import {
-  PlantBrowserService,
-  type FullPlant,
-} from "@/services/plantBrowserService";
-import { validateSwapEligibility } from "@/utils/swapValidation";
-import { showError } from "@/services/toastService";
-import { usePagination } from "@/hooks/usePagination";
-import { useFiltering } from "@/hooks/useFiltering";
-import { FilteringPresets } from "@/config/filteringPresets";
+import { usePlantsBrowser } from "@/hooks/usePlantsBrowser";
 import { SEARCH_PLACEHOLDERS } from "@/constants/filters";
-import { PAGINATION_SIZES } from "@/constants/pagination";
 import { DOMAIN_FILTER_TYPES } from "@/constants/filterTypes";
 import { SPACING } from "@/constants/layouts";
 import type { FilterConfig } from "@/types/filtering";
+import type { FullPlant } from "@/services/plantBrowserService";
 
 const PLANT_FILTER_CONFIG: FilterConfig[] = [
   {
@@ -42,102 +33,16 @@ interface PlantBrowserContainerProps {
 export function PlantBrowserContainer({
   className = "",
 }: PlantBrowserContainerProps) {
-  const [plants, setPlants] = useState<FullPlant[]>([]);
-  const [userPlants, setUserPlants] = useState<FullPlant[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<{
-    id: string;
-    email?: string;
-  } | null>(null);
-
-  const [openSwap, setOpenSwap] = useState(false);
-  const [targetPlant, setTargetPlant] = useState<FullPlant | null>(null);
-
   const {
-    filteredItems: filteredPlants,
-    filters,
-    updateFilter,
-  } = useFiltering(plants, {
-    ...FilteringPresets.plants,
-    searchFields: [
-      ...FilteringPresets.plants.searchFields,
-    ] as (keyof FullPlant)[],
-    defaultSort: {
-      field: FilteringPresets.plants.defaultSort.field as keyof FullPlant,
-      direction: FilteringPresets.plants.defaultSort.direction,
-    },
-  });
-
-  const { page, totalPages, paginated, goToPage } = usePagination(
     filteredPlants,
-    PAGINATION_SIZES.CARDS
-  );
-
-  useEffect(() => {
-    updateFilter("custom", { availability: "available" });
-  }, [updateFilter]);
-
-  useEffect(() => {
-    const loadBrowsingData = async () => {
-      try {
-        setLoading(true);
-
-        const {
-          otherPlants,
-          userPlants: myPlants,
-          currentUser: user,
-        } = await PlantBrowserService.loadBrowsingData();
-
-        setPlants(otherPlants);
-        setUserPlants(myPlants);
-        setCurrentUser(user);
-      } catch (error) {
-        console.error("Error loading browsing data:", error);
-        showError(
-          error instanceof Error ? error.message : "Could not load plants."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadBrowsingData();
-  }, []);
-
-  const handlePlantClick = async (plant: FullPlant) => {
-    if (!currentUser) {
-      showError("Please log in to propose swaps.");
-      return;
-    }
-
-    const validation = validateSwapEligibility(userPlants, plant);
-
-    if (!validation.isValid) {
-      showError(validation.errorMessage!);
-      return;
-    }
-
-    if (validation.warningMessage) {
-      console.warn(validation.warningMessage);
-    }
-
-    setTargetPlant(plant);
-    setOpenSwap(true);
-  };
-
-  const handleFilterChange = (key: string, value: any) => {
-    if (key === "search") {
-      updateFilter("search", value);
-    } else if (key === "availability") {
-      updateFilter("custom", { availability: value });
-    }
-    goToPage(1);
-  };
-
-  const handleSwapModalClose = () => {
-    setOpenSwap(false);
-    setTargetPlant(null);
-  };
+    loading,
+    swapModalState,
+    pagination,
+    filters,
+    handlePlantClick,
+    handleFilterChange,
+    handleSwapModalClose,
+  } = usePlantsBrowser();
 
   if (loading) {
     return (
@@ -152,8 +57,6 @@ export function PlantBrowserContainer({
       </div>
     );
   }
-
-  const availableUserPlants = userPlants.filter((p) => p.disponible);
 
   return (
     <div className={`min-h-screen ${SPACING.PAGE.SECTION_GAP} ${className}`}>
@@ -171,9 +74,7 @@ export function PlantBrowserContainer({
             values={
               {
                 search: filters.search,
-                availability:
-                  (filters.custom as Record<string, any>)?.availability ||
-                  "available",
+                availability: filters.availability,
               } as any
             }
             onChange={handleFilterChange}
@@ -183,10 +84,10 @@ export function PlantBrowserContainer({
       </Card>
 
       <PaginatedCards
-        data={paginated}
-        page={page}
-        totalPages={totalPages}
-        onPageChange={goToPage}
+        data={filteredPlants}
+        page={pagination.page}
+        totalPages={pagination.totalPages}
+        onPageChange={pagination.onPageChange}
         emptyMessage="No plants found matching your criteria."
         renderCard={(plant: FullPlant) => (
           <PlantCard
@@ -198,10 +99,10 @@ export function PlantBrowserContainer({
       />
 
       <ProposeSwapModal
-        open={openSwap}
+        open={swapModalState.open}
         onOpenChange={handleSwapModalClose}
-        targetPlant={targetPlant}
-        userPlants={availableUserPlants}
+        targetPlant={swapModalState.targetPlant}
+        userPlants={swapModalState.availableUserPlants}
       />
     </div>
   );
