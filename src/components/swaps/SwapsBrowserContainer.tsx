@@ -123,7 +123,7 @@ export function SwapsBrowserContainer({
       render: (swap: FullSwap) => (
         <div className="flex items-center gap-2">
           <img
-            src={swap.receiver?.avatar_url || "/avatar-placeholder.png"}
+            src={swap.receiver?.avatar_url || "/imagenotfound.jpeg"}
             alt={swap.receiver?.username || "User avatar"}
             loading="lazy"
             className="w-8 h-8 rounded-full object-cover cursor-pointer hover:scale-105 transition-transform duration-200"
