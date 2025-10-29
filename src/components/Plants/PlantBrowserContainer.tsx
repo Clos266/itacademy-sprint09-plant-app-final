@@ -4,7 +4,7 @@ import { ProposeSwapModal } from "@/components/swaps/ProposeSwapModal";
 import { PlantCard } from "@/components/cards";
 import { LoadingState } from "@/components/common/LoadingState";
 import { PaginatedCards } from "@/components/common/PaginatedCards";
-import { PageHeader, PageHeaderHeading } from "@/components/page-header";
+import { PageHeader, PageHeaderHeading } from "@/components/PageHeader";
 import { Leaf } from "lucide-react";
 import { usePlantsBrowser } from "@/hooks/usePlantsBrowser";
 import { SEARCH_PLACEHOLDERS } from "@/constants/filters";

@@ -1,4 +1,4 @@
-import { PageHeader, PageHeaderHeading } from "@/components/page-header";
+import { PageHeader, PageHeaderHeading } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { FilterBar } from "@/components/common/FilterBar";
 import { Button } from "@/components/ui/button";

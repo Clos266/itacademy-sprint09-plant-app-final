@@ -1,4 +1,4 @@
-import { RealtimeChat } from "@/components/realtime-chat";
+import { RealtimeChat } from "@/components/RealtimeChat";
 import { useRealtimeChat } from "@/hooks/use-realtime-chat";
 
 interface SwapChatProps {

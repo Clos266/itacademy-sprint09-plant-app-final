@@ -1,10 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { PageHeader, PageHeaderHeading } from "@/components/page-header";
+import { PageHeader, PageHeaderHeading } from "@/components/PageHeader";
 import { FilterBar } from "@/components/common/FilterBar";
 import { SearchInput } from "@/components/common/SearchInput";
 import { LoadingState } from "@/components/common/LoadingState";
 import { Button } from "@/components/ui/button";
-import { NewPlantButton } from "@/components/Plants/NewPlantModal";
+import { NewPlantButton } from "@/components/Plants/NewPlantButton";
 import { EditPlantModal } from "@/components/Plants/EditPlantModal";
 import { PlantDetailsModal } from "@/components/Plants/PlantDetailsModal";
 import { MyPlantsTable } from "@/components/Plants/MyPlantsTable";

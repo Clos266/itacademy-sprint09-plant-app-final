@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import { AppLayout } from "./components/app-layout";
+import { AppLayout } from "./components/AppLayout";
 import NotMatch from "./pages/NotMatch";
 import Events from "./pages/Events";
 import Login from "./pages/Login";

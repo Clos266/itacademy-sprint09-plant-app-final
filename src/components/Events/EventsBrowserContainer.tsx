@@ -1,4 +1,4 @@
-import { PageHeader, PageHeaderHeading } from "@/components/page-header";
+import { PageHeader, PageHeaderHeading } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -7,8 +7,8 @@ import { SearchInput } from "@/components/common/SearchInput";
 import { EventGrid } from "@/components/Events/EventGrid";
 import { SwapPointGrid } from "@/components/swappoints/SwapPointGrid";
 import { LoadingState } from "@/components/common/LoadingState";
-import { NewEventButton } from "@/components/Events/NewEventModal";
-import { NewSwapPointButton } from "@/components/swappoints/NewSwapPointModal";
+import { NewEventButton } from "@/components/Events/NewEventButton";
+import { NewSwapPointButton } from "@/components/swappoints/NewSwapPointButton";
 import { EventDetailsModal } from "@/components/Events/EventDetailsModal";
 import { SwapPointDetailsModal } from "@/components/swappoints/SwapPointDetailsModal";
 import { useEventsPage } from "@/hooks/useEventsPage";
