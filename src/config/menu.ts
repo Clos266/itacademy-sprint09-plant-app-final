@@ -17,7 +17,7 @@ type MenuType = MenuItemType[];
 
 export const mainMenu: MenuType = [
   {
-    title: "Search Plants",
+    title: "Browse Plants",
     url: "/",
     icon: Compass,
   },
