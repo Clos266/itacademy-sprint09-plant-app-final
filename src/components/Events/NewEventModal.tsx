@@ -177,7 +177,7 @@ export function NewEventButton() {
                     ))
                   ) : (
                     <SelectItem value="none" disabled>
-                      No swap points available
+                      No meeting points available
                     </SelectItem>
                   )}
                 </SelectContent>

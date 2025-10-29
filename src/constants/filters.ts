@@ -43,7 +43,7 @@ export const SEARCH_PLACEHOLDERS = {
   plants: "Search plants or species...",
   userPlants: "Search your plants...",
   events: "Search events...",
-  swappoints: "Search swap points...",
+  swappoints: "Search meeting points...",
   swaps: "Search swaps by user, plants, or status...",
   users: "Search users...",
 } as const;

@@ -14,6 +14,7 @@ import { SwapPointDetailsModal } from "@/components/swappoints/SwapPointDetailsM
 import { useEventsPage } from "@/hooks/useEventsPage";
 import { SPACING } from "@/constants/layouts";
 import { DOMAIN_FILTER_TYPES } from "@/constants/filterTypes";
+import { SEARCH_PLACEHOLDERS } from "@/constants/filters";
 
 const EMPTY_MESSAGES = {
   events: "No events found.",
@@ -56,7 +57,7 @@ export function EventsBrowserContainer() {
       >
         <TabsList className="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="events">Events</TabsTrigger>
-          <TabsTrigger value="swappoints">Swap Points</TabsTrigger>
+          <TabsTrigger value="swappoints">Meeting Points</TabsTrigger>
         </TabsList>
 
         <Card className="mb-4">
@@ -66,7 +67,11 @@ export function EventsBrowserContainer() {
                 <SearchInput
                   value={search}
                   onChange={setSearch}
-                  placeholder={`Search ${activeTab}...`}
+                  placeholder={
+                    activeTab === "events"
+                      ? SEARCH_PLACEHOLDERS.events
+                      : SEARCH_PLACEHOLDERS.swappoints
+                  }
                 />
               }
               filters={
