@@ -65,7 +65,7 @@ export function getPlantAvailabilityStatus(plant: Plant): {
 }
 
 export function getPlantImageUrl(plant: Plant): string {
-  return plant.image_url || "/public/imagenotfound.jpeg";
+  return plant.image_url || "/imagenotfound.jpeg";
 }
 
 export function getMyPlantsStats(plants: Plant[]) {

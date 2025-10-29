@@ -2,7 +2,11 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { fetchEvents } from "@/services/eventService";
 import { fetchSwapPoints } from "@/services/swapPointsService";
 import { showError } from "@/services/toastService";
-import { filterEvents, filterSwapPoints } from "@/utils/eventsFiltering";
+import {
+  filterEvents,
+  filterSwapPoints,
+  sortEventsByDate,
+} from "@/utils/eventsFiltering";
 import type { Database } from "@/types/supabase";
 
 type Event = Database["public"]["Tables"]["events"]["Row"];
@@ -69,9 +73,7 @@ export function useEventsPage(): UseEventsPageReturn {
         fetchSwapPoints(),
       ]);
 
-      const sortedEvents = eventData.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
+      const sortedEvents = sortEventsByDate(eventData);
 
       setEvents(sortedEvents);
       setSwappoints(swappointData);

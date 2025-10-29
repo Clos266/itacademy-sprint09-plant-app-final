@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { showError, showWarning } from "@/services/toastService";
-import { fetchPlants } from "@/services/plantCrudService";
-import { supabase } from "@/services/supabaseClient";
+import { PlantBrowserService } from "@/services/plantBrowserService";
 import type { Database } from "@/types/supabase";
 import { usePagination } from "@/hooks/usePagination";
 import { useFiltering } from "@/hooks/useFiltering";
@@ -53,21 +52,11 @@ export function usePlantsBrowser() {
       try {
         setLoading(true);
 
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError) throw userError;
-        if (!user) throw new Error("No active session");
-
-        const data = await fetchPlants(true);
-
-        const otherPlants = data.filter((p) => p.user_id !== user.id);
-        const myPlants = data.filter((p) => p.user_id === user.id);
+        const { otherPlants, userPlants } =
+          await PlantBrowserService.loadBrowsingData();
 
         setPlants(otherPlants);
-        setUserPlants(myPlants);
+        setUserPlants(userPlants);
       } catch (err) {
         console.error("Error fetching plants:", err);
         showError("Could not load plants.");
