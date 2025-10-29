@@ -6,7 +6,6 @@ import { showError, showSuccess } from "@/services/toastService";
 export type Swap = Database["public"]["Tables"]["swaps"]["Row"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Plant = Database["public"]["Tables"]["plants"]["Row"];
-export type SwapPoint = Database["public"]["Tables"]["swap_points"]["Row"];
 
 export type SwapInsert = Omit<
   Swap,
@@ -298,25 +297,6 @@ export function subscribeToUserSwaps(
     .subscribe();
 
   return () => supabase.removeChannel(channel);
-}
-
-export async function fetchSwapPoints(): Promise<SwapPoint[]> {
-  try {
-    const { data, error } = await supabase
-      .from(TABLES.POINTS)
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching swap points:", error.message);
-      throw new Error(`Failed to fetch swap points: ${error.message}`);
-    }
-
-    return data ?? [];
-  } catch (error) {
-    console.error("Service error in fetchSwapPoints:", error);
-    throw error;
-  }
 }
 
 export async function updateSwapStatusWithAvailability(

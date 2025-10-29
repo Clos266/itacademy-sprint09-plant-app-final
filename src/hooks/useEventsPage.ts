@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { fetchEvents } from "@/services/eventService";
-import { fetchSwapPoints } from "@/services/swapPointsCrudService";
+import { fetchSwapPoints } from "@/services/swapPointsService";
 import { showError } from "@/services/toastService";
 import { filterEvents, filterSwapPoints } from "@/utils/eventsFiltering";
 import type { Database } from "@/types/supabase";

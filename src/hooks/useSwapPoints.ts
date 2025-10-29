@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fetchSwapPoints } from "@/services/swapPointsCrudService";
+import { fetchSwapPoints } from "@/services/swapPointsService";
 import type { Database } from "@/types/supabase";
 
 type SwapPoint = Database["public"]["Tables"]["swap_points"]["Row"];

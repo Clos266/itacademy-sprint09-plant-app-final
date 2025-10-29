@@ -1,13 +1,13 @@
 import { supabase } from "./supabaseClient";
-import { fetchPlants } from "./plantCrudService";
-import type { Database } from "@/types/supabase";
+import {
+  fetchPlants,
+  fetchPlantsByUserForSwap,
+  searchPlants,
+  type PlantWithProfile,
+} from "./plantCrudService";
 
-type Plant = Database["public"]["Tables"]["plants"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-
-export interface FullPlant extends Plant {
-  profile?: Profile | null;
-}
+// Alias para compatibilidad con componentes existentes
+export interface FullPlant extends PlantWithProfile {}
 
 export class PlantBrowserService {
   static async loadBrowsingData(): Promise<{
@@ -49,20 +49,18 @@ export class PlantBrowserService {
     userId: string,
     onlyAvailable: boolean = true
   ): Promise<FullPlant[]> {
-    const plantsData = await fetchPlants(true);
-
-    let filteredPlants = plantsData.filter((plant) => plant.user_id !== userId);
-
-    if (onlyAvailable) {
-      filteredPlants = filteredPlants.filter((plant) => plant.disponible);
-    }
-
-    return filteredPlants;
+    return searchPlants(
+      "",
+      {
+        excludeUserId: userId,
+        availability: onlyAvailable ? "available" : "all",
+      },
+      true
+    );
   }
 
   static async getUserPlantsForSwapping(userId: string): Promise<FullPlant[]> {
-    const plantsData = await fetchPlants(true);
-    return plantsData.filter((plant) => plant.user_id === userId);
+    return fetchPlantsByUserForSwap(userId);
   }
 
   static async searchBrowsingPlants(
@@ -74,43 +72,14 @@ export class PlantBrowserService {
     } = {},
     excludeUserId?: string
   ): Promise<FullPlant[]> {
-    let plants = await fetchPlants(true);
-
-    if (excludeUserId) {
-      plants = plants.filter((plant) => plant.user_id !== excludeUserId);
-    }
-
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase().trim();
-      plants = plants.filter(
-        (plant) =>
-          plant.nombre_comun?.toLowerCase().includes(term) ||
-          plant.nombre_cientifico?.toLowerCase().includes(term) ||
-          plant.especie?.toLowerCase().includes(term) ||
-          plant.profile?.username?.toLowerCase().includes(term) ||
-          plant.profile?.ciudad?.toLowerCase().includes(term)
-      );
-    }
-
-    if (filters.availability && filters.availability !== "all") {
-      const isAvailable = filters.availability === "available";
-      plants = plants.filter((plant) => plant.disponible === isAvailable);
-    }
-
-    if (filters.species) {
-      plants = plants.filter((plant) =>
-        plant.especie?.toLowerCase().includes(filters.species!.toLowerCase())
-      );
-    }
-
-    if (filters.location) {
-      plants = plants.filter((plant) =>
-        plant.profile?.ciudad
-          ?.toLowerCase()
-          .includes(filters.location!.toLowerCase())
-      );
-    }
-
-    return plants;
+    return searchPlants(
+      searchTerm,
+      {
+        availability: filters.availability,
+        species: filters.species,
+        excludeUserId,
+      },
+      true
+    );
   }
 }

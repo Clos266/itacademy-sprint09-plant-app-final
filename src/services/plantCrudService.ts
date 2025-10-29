@@ -41,22 +41,82 @@ export async function fetchPlantsByUser(userId: string): Promise<Plant[]> {
   return data ?? [];
 }
 
-export async function searchPlants(
-  term: string,
-  onlyAvailable = false
-): Promise<Plant[]> {
-  let query = supabase
+export async function fetchPlantsByUserForSwap(
+  userId: string
+): Promise<PlantWithProfile[]> {
+  const { data, error } = await supabase
     .from(TABLE)
-    .select("*")
-    .or(
-      `nombre_comun.ilike.%${term}%,nombre_cientifico.ilike.%${term}%,especie.ilike.%${term}%`
-    );
+    .select("*, profiles(*)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
 
-  if (onlyAvailable) query = query.eq("disponible", true);
-
-  const { data, error } = await query.order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return data ?? [];
+  if (!data) return [];
+
+  return data.map((p: any) => ({
+    ...p,
+    profile: p.profiles ?? null,
+  }));
+}
+
+export async function searchPlants(
+  searchTerm: string = "",
+  filters: {
+    availability?: "all" | "available" | "unavailable";
+    species?: string;
+    excludeUserId?: string;
+  } = {},
+  withOwner = false
+): Promise<PlantWithProfile[]> {
+  const res = withOwner
+    ? await supabase.from(TABLE).select("*, profiles(*)")
+    : await supabase.from(TABLE).select("*");
+
+  if (res.error) throw new Error(res.error.message);
+  if (!res.data) return [];
+
+  let plants: PlantWithProfile[] = withOwner
+    ? res.data.map((p: any) => ({
+        ...p,
+        profile: p.profiles ?? null,
+      }))
+    : res.data;
+
+  // Filter by search term
+  if (searchTerm.trim()) {
+    const term = searchTerm.toLowerCase().trim();
+    plants = plants.filter(
+      (plant) =>
+        plant.nombre_comun?.toLowerCase().includes(term) ||
+        plant.nombre_cientifico?.toLowerCase().includes(term) ||
+        plant.especie?.toLowerCase().includes(term) ||
+        (withOwner && plant.profile?.username?.toLowerCase().includes(term)) ||
+        (withOwner && plant.profile?.ciudad?.toLowerCase().includes(term))
+    );
+  }
+
+  // Filter by user exclusion
+  if (filters.excludeUserId) {
+    plants = plants.filter((plant) => plant.user_id !== filters.excludeUserId);
+  }
+
+  // Filter by availability
+  if (filters.availability && filters.availability !== "all") {
+    const isAvailable = filters.availability === "available";
+    plants = plants.filter((plant) => plant.disponible === isAvailable);
+  }
+
+  // Filter by species
+  if (filters.species) {
+    plants = plants.filter((plant) =>
+      plant.especie?.toLowerCase().includes(filters.species!.toLowerCase())
+    );
+  }
+
+  return plants.sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 }
 
 export async function addPlant(plant: PlantInsert): Promise<Plant> {
