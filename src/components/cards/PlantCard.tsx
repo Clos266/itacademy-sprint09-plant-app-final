@@ -40,7 +40,7 @@ export function PlantCard({ plant, onClick }: PlantCardProps) {
 
       <div className="flex items-center gap-2">
         <img
-          src={owner?.avatar_url || "/avatar-placeholder.png"}
+          src={owner?.avatar_url || "/imagenotfound.jpeg"}
           alt={owner?.username || "User"}
           className="w-6 h-6 rounded-full object-cover"
           loading="lazy"

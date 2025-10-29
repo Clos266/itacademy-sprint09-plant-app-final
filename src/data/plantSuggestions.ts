@@ -1,221 +1,170 @@
-// src/data/plantSuggestions.ts
-
 export interface PlantSuggestion {
   nombre_cientifico: string;
   familia: string;
   especie: string;
-  categoria?: string;
 }
 
 export const plantSuggestions: Record<string, PlantSuggestion> = {
+  // 🌿 Plantas comunes de interior
   monstera: {
     nombre_cientifico: "Monstera deliciosa",
     familia: "Araceae",
     especie: "Monstera",
-    categoria: "Tropical",
   },
   pothos: {
     nombre_cientifico: "Epipremnum aureum",
     familia: "Araceae",
     especie: "Epipremnum",
-    categoria: "Trepadora",
   },
   ficus: {
     nombre_cientifico: "Ficus elastica",
     familia: "Moraceae",
     especie: "Ficus",
-    categoria: "Interior",
-  },
-  ficus_lyrata: {
-    nombre_cientifico: "Ficus lyrata",
-    familia: "Moraceae",
-    especie: "Ficus",
-    categoria: "Interior",
   },
   sansevieria: {
     nombre_cientifico: "Sansevieria trifasciata",
     familia: "Asparagaceae",
     especie: "Sansevieria",
-    categoria: "Interior / resistente",
   },
   zamioculca: {
     nombre_cientifico: "Zamioculcas zamiifolia",
     familia: "Araceae",
     especie: "Zamioculcas",
-    categoria: "Interior / baja luz",
-  },
-  calathea: {
-    nombre_cientifico: "Calathea orbifolia",
-    familia: "Marantaceae",
-    especie: "Calathea",
-    categoria: "Interior / hoja decorativa",
-  },
-  alocasia: {
-    nombre_cientifico: "Alocasia macrorrhiza",
-    familia: "Araceae",
-    especie: "Alocasia",
-    categoria: "Tropical",
   },
   dracaena: {
     nombre_cientifico: "Dracaena fragrans",
     familia: "Asparagaceae",
     especie: "Dracaena",
-    categoria: "Interior",
   },
-  aloe: {
-    nombre_cientifico: "Aloe vera",
-    familia: "Asphodelaceae",
-    especie: "Aloe",
-    categoria: "Suculenta",
-  },
-  cactus: {
-    nombre_cientifico: "Cactaceae",
-    familia: "Cactaceae",
-    especie: "Cactus",
-    categoria: "Suculenta",
-  },
-  echeveria: {
-    nombre_cientifico: "Echeveria elegans",
-    familia: "Crassulaceae",
-    especie: "Echeveria",
-    categoria: "Suculenta",
-  },
-  crassula: {
-    nombre_cientifico: "Crassula ovata",
-    familia: "Crassulaceae",
-    especie: "Crassula",
-    categoria: "Suculenta",
-  },
-  peperomia: {
-    nombre_cientifico: "Peperomia obtusifolia",
-    familia: "Piperaceae",
-    especie: "Peperomia",
-    categoria: "Interior / compacta",
-  },
-  pothos_neon: {
-    nombre_cientifico: "Epipremnum aureum 'Neon'",
-    familia: "Araceae",
-    especie: "Epipremnum",
-    categoria: "Trepadora variegada",
+  calathea: {
+    nombre_cientifico: "Calathea orbifolia",
+    familia: "Marantaceae",
+    especie: "Calathea",
   },
   philodendron: {
     nombre_cientifico: "Philodendron hederaceum",
     familia: "Araceae",
     especie: "Philodendron",
-    categoria: "Interior / trepadora",
-  },
-  monstera_adansonii: {
-    nombre_cientifico: "Monstera adansonii",
-    familia: "Araceae",
-    especie: "Monstera",
-    categoria: "Interior / hojas perforadas",
   },
   spathiphyllum: {
     nombre_cientifico: "Spathiphyllum wallisii",
     familia: "Araceae",
     especie: "Spathiphyllum",
-    categoria: "Interior / flor",
   },
-  hermaphrodita: {
-    nombre_cientifico: "Tradescantia zebrina",
-    familia: "Commelinaceae",
-    especie: "Tradescantia",
-    categoria: "Colgante",
+
+  // 🌸 Flores
+  rosa: {
+    nombre_cientifico: "Rosa spp.",
+    familia: "Rosaceae",
+    especie: "Rosa",
   },
-  zebra_plant: {
-    nombre_cientifico: "Aphelandra squarrosa",
-    familia: "Acanthaceae",
-    especie: "Aphelandra",
-    categoria: "Interior / flor",
+  geranio: {
+    nombre_cientifico: "Pelargonium hortorum",
+    familia: "Geraniaceae",
+    especie: "Pelargonium",
   },
-  begonia: {
-    nombre_cientifico: "Begonia rex",
-    familia: "Begoniaceae",
-    especie: "Begonia",
-    categoria: "Interior / hojas decorativas",
+  lavanda: {
+    nombre_cientifico: "Lavandula angustifolia",
+    familia: "Lamiaceae",
+    especie: "Lavandula",
   },
-  ficus_benjamina: {
-    nombre_cientifico: "Ficus benjamina",
-    familia: "Moraceae",
-    especie: "Ficus",
-    categoria: "Interior / árbol",
+  margarita: {
+    nombre_cientifico: "Bellis perennis",
+    familia: "Asteraceae",
+    especie: "Bellis",
   },
-  monstera_obliqua: {
-    nombre_cientifico: "Monstera obliqua",
-    familia: "Araceae",
-    especie: "Monstera",
-    categoria: "Exótica",
+  jazmin: {
+    nombre_cientifico: "Jasminum officinale",
+    familia: "Oleaceae",
+    especie: "Jasminum",
   },
-  hoya: {
-    nombre_cientifico: "Hoya carnosa",
-    familia: "Apocynaceae",
-    especie: "Hoya",
-    categoria: "Colgante / trepadora",
+  hortensia: {
+    nombre_cientifico: "Hydrangea macrophylla",
+    familia: "Hydrangeaceae",
+    especie: "Hydrangea",
   },
-  ficus_microcarpa: {
-    nombre_cientifico: "Ficus microcarpa",
-    familia: "Moraceae",
-    especie: "Ficus",
-    categoria: "Interior / bonsái",
+  violeta: {
+    nombre_cientifico: "Viola odorata",
+    familia: "Violaceae",
+    especie: "Viola",
   },
-  aspidistra: {
-    nombre_cientifico: "Aspidistra elatior",
-    familia: "Asparagaceae",
-    especie: "Aspidistra",
-    categoria: "Sombras profundas",
+
+  // 🌵 Cactus y suculentas
+  cactus: {
+    nombre_cientifico: "Cactaceae",
+    familia: "Cactaceae",
+    especie: "Cactus",
   },
-  peperomia_unifolia: {
-    nombre_cientifico: "Peperomia prostrata",
-    familia: "Piperaceae",
-    especie: "Peperomia",
-    categoria: "Colgante / compacto",
+  aloe: {
+    nombre_cientifico: "Aloe vera",
+    familia: "Asphodelaceae",
+    especie: "Aloe",
   },
-  ficus_microcarpa_ginseng: {
-    nombre_cientifico: "Ficus microcarpa 'Ginseng'",
-    familia: "Moraceae",
-    especie: "Ficus",
-    categoria: "Interior / bonsái",
+  echeveria: {
+    nombre_cientifico: "Echeveria elegans",
+    familia: "Crassulaceae",
+    especie: "Echeveria",
   },
-  schefflera: {
-    nombre_cientifico: "Schefflera arboricola",
-    familia: "Araliaceae",
-    especie: "Schefflera",
-    categoria: "Interior / arbusto",
+  crassula: {
+    nombre_cientifico: "Crassula ovata",
+    familia: "Crassulaceae",
+    especie: "Crassula",
   },
-  zz: {
-    nombre_cientifico: "Zamioculcas zamiifolia",
-    familia: "Araceae",
-    especie: "Zamioculcas",
-    categoria: "Interior / resistente",
+  haworthia: {
+    nombre_cientifico: "Haworthia fasciata",
+    familia: "Asphodelaceae",
+    especie: "Haworthia",
   },
-  philodendron_birkin: {
-    nombre_cientifico: "Philodendron Birkin",
-    familia: "Araceae",
-    especie: "Philodendron",
-    categoria: "Interior / hoja variegada",
+  sedum: {
+    nombre_cientifico: "Sedum morganianum",
+    familia: "Crassulaceae",
+    especie: "Sedum",
   },
-  monstera_borbonica: {
-    nombre_cientifico: "Monstera deliciosa var. albo",
-    familia: "Araceae",
-    especie: "Monstera",
-    categoria: "Interior / hoja variegada",
+  opuntia: {
+    nombre_cientifico: "Opuntia microdasys",
+    familia: "Cactaceae",
+    especie: "Opuntia",
   },
-  dracaena_marginata: {
-    nombre_cientifico: "Dracaena marginata",
-    familia: "Asparagaceae",
-    especie: "Dracaena",
-    categoria: "Interior / ornamental",
+  mammillaria: {
+    nombre_cientifico: "Mammillaria spinosissima",
+    familia: "Cactaceae",
+    especie: "Mammillaria",
   },
-  aglaonema: {
-    nombre_cientifico: "Aglaonema commutatum",
-    familia: "Araceae",
-    especie: "Aglaonema",
-    categoria: "Interior / hojas decorativas",
+
+  // 🪴 Plantas comunes caseras
+  albahaca: {
+    nombre_cientifico: "Ocimum basilicum",
+    familia: "Lamiaceae",
+    especie: "Ocimum",
   },
-  ficus_rubiginosa: {
-    nombre_cientifico: "Ficus rubiginosa",
-    familia: "Moraceae",
-    especie: "Ficus",
-    categoria: "Interior / bonsái",
+  menta: {
+    nombre_cientifico: "Mentha spicata",
+    familia: "Lamiaceae",
+    especie: "Mentha",
+  },
+  romero: {
+    nombre_cientifico: "Rosmarinus officinalis",
+    familia: "Lamiaceae",
+    especie: "Rosmarinus",
+  },
+  perejil: {
+    nombre_cientifico: "Petroselinum crispum",
+    familia: "Apiaceae",
+    especie: "Petroselinum",
+  },
+  cilantro: {
+    nombre_cientifico: "Coriandrum sativum",
+    familia: "Apiaceae",
+    especie: "Coriandrum",
+  },
+  hierbabuena: {
+    nombre_cientifico: "Mentha piperita",
+    familia: "Lamiaceae",
+    especie: "Mentha",
+  },
+  tomillo: {
+    nombre_cientifico: "Thymus vulgaris",
+    familia: "Lamiaceae",
+    especie: "Thymus",
   },
 };

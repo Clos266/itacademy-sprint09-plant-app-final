@@ -209,7 +209,7 @@ export function EventDetailsModal({
               {event.profiles && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
                   <img
-                    src={event.profiles.avatar_url || "/avatar-placeholder.png"}
+                    src={event.profiles.avatar_url || "/imagenotfound.jpeg"}
                     alt={event.profiles.username || "User"}
                     className="w-9 h-9 rounded-full object-cover border border-border"
                   />

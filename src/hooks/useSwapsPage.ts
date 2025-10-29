@@ -1,12 +1,3 @@
-/**
- * 🔄 useSwapsPage Hook
- *
- * Centralized state management for Swaps page functionality.
- * Extracts all business logic, state management, and actions from Swaps.tsx
- *
- * Following the successful pattern from useEventsPage.ts
- */
-
 import { useState, useMemo, useCallback } from "react";
 import { useSwaps } from "@/hooks/useSwaps";
 import { usePagination } from "@/hooks/usePagination";

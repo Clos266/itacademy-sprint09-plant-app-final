@@ -99,7 +99,7 @@ export function PlantDetailsModal({
           {plant.profile && (
             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
               <img
-                src={plant.profile.avatar_url || "/avatar-placeholder.png"}
+                src={plant.profile.avatar_url || "/imagenotfound.jpeg"}
                 alt={plant.profile.username || "User"}
                 className="w-9 h-9 rounded-full object-cover border border-border"
               />

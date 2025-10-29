@@ -179,7 +179,7 @@ export function SwapInfoModal({
                 <div className={userCardClass}>
                   <div className="flex flex-col items-center mb-2">
                     <img
-                      src={swap.sender?.avatar_url || "/avatar-placeholder.png"}
+                      src={swap.sender?.avatar_url || "/imagenotfound.jpeg"}
                       alt={`${
                         swap.sender?.username || "Unknown user"
                       }'s avatar`}
@@ -211,9 +211,7 @@ export function SwapInfoModal({
                 <div className={userCardClass}>
                   <div className="flex flex-col items-center mb-2">
                     <img
-                      src={
-                        swap.receiver?.avatar_url || "/avatar-placeholder.png"
-                      }
+                      src={swap.receiver?.avatar_url || "/imagenotfound.jpeg"}
                       alt={`${
                         swap.receiver?.username || "Unknown user"
                       }'s avatar`}
