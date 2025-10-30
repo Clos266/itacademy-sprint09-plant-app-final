@@ -1,4 +1,3 @@
-//importes menos verbosos
 export { BaseCard } from "./BaseCard";
 export { CardField } from "./CardField";
 export { IconField } from "./IconField";
